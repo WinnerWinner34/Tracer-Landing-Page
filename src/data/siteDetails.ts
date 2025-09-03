@@ -1,9 +1,9 @@
 export const siteDetails = {
-    siteName: 'Finwise',
-    siteUrl: 'https://finwise-omega.vercel.app/',
+    siteName: 'Tracer Fleet Tracking',
+    siteUrl: 'https://tracerfleet.com/',
     metadata: {
-        title: 'Finwise - Next.js and Tailwind CSS Landing Page Template',
-        description: 'Finwise empowers businesses with cutting-edge technology solutions to drive success and efficiency.',
+        title: 'Tracer Fleet Tracking',
+        description: 'Tracer Fleet Tracking empowers businesses with the capabilities to optimize their fleet of vehicles to increase efficency and save costs.',
     },
     language: 'en-us',
     locale: 'en-US',
