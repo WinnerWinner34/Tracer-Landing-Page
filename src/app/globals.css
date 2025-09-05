@@ -45,10 +45,6 @@ h1, h2, h3, h4, h5, h6 {
   font-style: normal;
 }
 
-#logos svg {
-  @apply w-fit h-10 sm:h-12;
-}
-
 .benefit-section:last-of-type > div {
   @apply mb-10;
 }
