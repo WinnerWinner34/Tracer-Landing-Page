@@ -3,7 +3,6 @@ import Image from "next/image";
 import clsx from "clsx";
 import { motion, Variants } from "framer-motion"
 
-import BenefitBullet from "./BenefitBullet";
 import SectionTitle from "../SectionTitle";
 import { IBenefit } from "@/types";
 
@@ -47,7 +46,7 @@ export const childVariants = {
 };
 
 const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight }: Props) => {
-    const { title, description, imageSrc, bullets } = benefit;
+    const { title, description, imageSrc } = benefit;
 
     return (
         <section className="benefit-section">
@@ -77,12 +76,6 @@ const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight }: Props) => {
                                 {description}
                             </p>
                         </motion.div>
-
-                        <div className="mx-auto lg:ml-0 w-full">
-                            {bullets.map((item, index) => (
-                                <BenefitBullet key={index} title={item.title} icon={item.icon} description={item.description} />
-                            ))}
-                        </div>
                     </div>
                 </div>
 
