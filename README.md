@@ -1,39 +1,33 @@
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fnexi-launch%2Ffinwise-landing-page)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/your-repo/tracer-landing-page)
 
-# Finwise - Next.js + Tailwind Landing Page Template
+# Tracer Fleet Tracking - Next.js Landing Page
 
-Finwise is a lightweight, easily configurable, and customizable **Next.js** and **Tailwind CSS** landing page template. It’s built to be adaptable, performant, and perfect for any product launch, portfolio, or promotional site.
+Tracer Fleet Tracking is a modern, responsive landing page built with **Next.js 14**, **TypeScript**, and **Tailwind CSS**. It features email capture functionality with Brevo integration for lead generation, optimized for deployment on Netlify.
 
-Try out the demo here: [https://finwise-omega.vercel.app](https://finwise-omega.vercel.app).
-
-Please check out the documentation below to get started.
-
-----
+---
 
 ## Features
 
-- **Next.js** app router with **TypeScript**
+- **Next.js 14** app router with **TypeScript**
 - **Tailwind CSS** v3 for flexible styling customization
+- **Email capture form** with Brevo email integration
+- **Netlify Functions** for serverless backend
 - Smooth transitions powered by **Framer Motion**
 - Built-in **font optimization** with [next/font](https://nextjs.org/docs/app/api-reference/components/font)
 - Automatic **image optimization** via [next/image](https://nextjs.org/docs/app/building-your-application/optimizing/images)
 - Access to **31+ icon packs** via [React Icons](https://react-icons.github.io/react-icons/)
 - Near-perfect **Lighthouse score**
 - Modular, responsive, and **scalable components**
-- **Free lifetime updates**
 
 ---
 
 ## Sections
 
 - Hero
-- Partners or Clients Logos
-- Features
-- Pricing
+- Features (Benefits)
 - Testimonials
 - FAQ
-- Statistics
-- CTA
+- CTA with Email Capture Form
 - Footer
 
 ---
@@ -46,58 +40,200 @@ Before starting, make sure you have the following installed:
 
 - **Node.js**: Version 18 or later
 - **npm**: Version 8 or later (bundled with Node.js)
-- **Code editor**: [VS Code](https://code.visualstudio.com/) is recommended.
+- **Netlify CLI** (optional): For local testing with functions
+- **Code editor**: [VS Code](https://code.visualstudio.com/) is recommended
 
-### Steps
+### Installation
 
-1. **Install dependencies**: Run `npm install`
-2. **Run the development server**: `npm run dev`
-3. **View your project**: Open [localhost:3000](http://localhost:3000)
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/your-repo/tracer-landing-page.git
+   cd tracer-landing-page
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables** (for local development):
+   Create a `.env.local` file in the root directory:
+   ```env
+   BREVO_API_KEY=xkeysib-your-api-key-here
+   CONTACT_TO_EMAIL=admin@yourcompany.com
+   FROM_EMAIL=noreply@yourcompany.com
+   FROM_NAME=Tracer Fleet Tracking
+   SITE_URL=http://localhost:3000
+   ```
+
+4. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
+   Or with Netlify CLI (to test functions locally):
+   ```bash
+   npm run netlify:dev
+   ```
+
+5. **View your project**: Open [localhost:3000](http://localhost:3000)
+
+---
+
+## Environment Variables
+
+The following environment variables are required for the contact form to work:
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `BREVO_API_KEY` | Your Brevo API key (format: xkeysib-...) | Yes |
+| `CONTACT_TO_EMAIL` | Email address to receive form submissions | Yes |
+| `FROM_EMAIL` | Sender email address | No (defaults to noreply@tracerfleet.com) |
+| `FROM_NAME` | Sender name for emails | No (defaults to Tracer Fleet Tracking) |
+| `SITE_URL` | Your website URL | No (defaults to https://tracerfleet.com) |
+
+---
+
+## Deploying on Netlify
+
+### Quick Deploy
+
+Click the "Deploy to Netlify" button at the top of this README for instant deployment.
+
+### Manual Deployment
+
+1. **Push to GitHub**: Push your code to a GitHub repository
+
+2. **Import to Netlify**: 
+   - Go to [Netlify](https://app.netlify.com)
+   - Click "Add new site" > "Import an existing project"
+   - Connect your GitHub account and select your repository
+
+3. **Configure Build Settings**:
+   - Build command: `npm run build`
+   - Publish directory: `.next`
+   - Functions directory: `netlify/functions` (automatically detected)
+
+4. **Add Environment Variables**:
+   - Go to Site Settings > Environment Variables
+   - Add all required variables listed above
+
+5. **Deploy**: Click "Deploy site"
+
+### Using Netlify CLI
+
+1. **Install Netlify CLI**:
+   ```bash
+   npm install -g netlify-cli
+   ```
+
+2. **Login to Netlify**:
+   ```bash
+   netlify login
+   ```
+
+3. **Initialize site**:
+   ```bash
+   netlify init
+   ```
+
+4. **Set environment variables**:
+   ```bash
+   netlify env:set BREVO_API_KEY "xkeysib-your-api-key"
+   netlify env:set CONTACT_TO_EMAIL "admin@yourcompany.com"
+   ```
+
+5. **Deploy**:
+   ```bash
+   netlify deploy --prod
+   ```
+
+---
+
+## Local Development with Netlify Dev
+
+For testing Netlify Functions locally:
+
+```bash
+# Install Netlify CLI globally
+npm install -g netlify-cli
+
+# Run with Netlify Dev
+netlify dev
+```
+
+This will:
+- Start the Next.js dev server
+- Serve Netlify Functions locally
+- Inject environment variables from Netlify
 
 ---
 
 ## Customization
 
-1. **Edit colors**: Update `globals.css` for primary, secondary, background, and accent colors.
-2. **Update site details**: Customize `siteDetails.ts` in `/src/data` to reflect your brand and site info.
-3. **Modify content**: Files in `/src/data` handle data for navigation, features, pricing, testimonials, and more.
-4. **Replace favicon**: Add your icon to `/src/app/favicon.ico`.
-5. **Add images**: Update `public/images` for Open Graph metadata (e.g., `og-image.jpg`, `twitter-image.jpg`).
+1. **Edit colors**: Update `globals.css` for primary, secondary, background, and accent colors
+2. **Update site details**: Customize `siteDetails.ts` in `/src/data` to reflect your brand
+3. **Modify content**: Files in `/src/data` handle data for navigation, features, testimonials, and more
+4. **Replace favicon**: Add your icon to `/src/app/favicon.ico`
+5. **Add images**: Update `public/images` for Open Graph metadata
 
 ---
 
-## Deploying on Vercel
+## Project Structure
 
-The fastest way to deploy Finwise is on [Vercel](https://vercel.com/). Simply click the "Deploy with Vercel" button at the top of this README, or check the [Next.js deployment docs](https://vercel.com/docs/deployments/deployment-methods) for other deployment options.
+```
+tracer-landing-page/
+├── src/
+│   ├── app/          # Next.js app router pages
+│   ├── components/   # React components
+│   │   └── ContactForm.tsx  # Email capture form
+│   ├── data/         # Content data files
+│   └── styles/       # Global styles
+├── netlify/
+│   └── functions/    # Serverless functions
+│       └── send-email.ts  # Brevo email handler
+├── public/           # Static assets
+└── netlify.toml      # Netlify configuration
+```
+
+---
+
+## Troubleshooting
+
+### Contact Form Not Working
+
+1. **Check environment variables**: Ensure all required variables are set in Netlify
+2. **Verify Brevo API key**: Make sure your API key is valid and has proper permissions
+3. **Check function logs**: View logs in Netlify dashboard > Functions tab
+4. **Test locally**: Use `netlify dev` to test functions locally
+
+### Build Errors
+
+1. **Clear cache**: `rm -rf .next node_modules && npm install`
+2. **Check Node version**: Ensure you're using Node.js 18+
+3. **Review build logs**: Check Netlify deploy logs for specific errors
 
 ---
 
 ## Contributing
 
-Finwise is an open-source project, and we welcome contributions from the community! If you have ideas for new components, designs, layouts, or optimizations, please join us in making Finwise even better.
+We welcome contributions! Please feel free to submit a Pull Request.
 
-### How to Contribute
-
-1. **Fork the Repository**: Clone it locally.
-2. **Create a New Branch**: For example, `feature/new-section` or `fix/style-issue`.
-3. **Develop and Test**: Make sure your changes work and don't break existing functionality.
-4. **Submit a Pull Request**: Open a pull request with a clear description of your changes, and we'll review it.
-
-### Ideas for Contributions
-
-- New component sections (team introductions, comparison table, case studies, etc.)
-- Additional page variants (e.g., agency, eCommerce, portfolio layouts)
-- Additional themes
-- Documentation updates, tutorials, or guides
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ---
 
-## Community and Support
+## Support
 
-Join our community discussions on GitHub to share ideas, ask questions, or suggest improvements. Let’s build something amazing together!
+For issues and questions:
+- Create an issue on GitHub
+- Check existing issues for solutions
+- Review the documentation
 
-
---- 
+---
 
 ## License
 

@@ -6,10 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "netlify:dev": "netlify dev"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^2.2.0",
     "@headlessui/react": "^2.1.8",
+    "@netlify/functions": "^2.8.2",
     "@next/third-parties": "^14.2.13",
     "clsx": "^2.1.1",
     "framer-motion": "^11.11.9",
