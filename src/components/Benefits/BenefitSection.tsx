@@ -9,6 +9,7 @@ import { IBenefit } from "@/types";
 interface Props {
     benefit: IBenefit;
     imageAtRight?: boolean;
+    index?: number;
 }
 
 const containerVariants: Variants = {
@@ -45,7 +46,7 @@ export const childVariants = {
     },
 };
 
-const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight }: Props) => {
+const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight, index }: Props) => {
     const { title, description, imageSrc } = benefit;
 
     return (
@@ -81,7 +82,23 @@ const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight }: Props) => {
 
                 <div className={clsx("mt-5 lg:mt-0", { "lg:order-2": imageAtRight })}>
                     <div className={clsx("w-fit flex", { "justify-start": imageAtRight, "justify-end": !imageAtRight })}>
-                        <Image src={imageSrc} alt="title" width="384" height="762" quality={100} className="lg:ml-0" />
+                        <div className="
+    relative
+    w-80 h-96              
+    md:w-96 md:h-[480px]   
+    lg:w-[400px] lg:h-[500px] 
+    overflow-hidden 
+    rounded-xl
+">
+                            <Image 
+                                src={imageSrc} 
+                                alt={title}
+                                fill
+                                className="object-contain"
+                                sizes="(max-width: 768px) 320px, (max-width: 1024px) 384px, 400px"
+                                priority={index === 0}
+                            />
+                        </div>
                     </div>
                 </div>
             </motion.div>
