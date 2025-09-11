@@ -1,5 +1,6 @@
 import { vipOfferDetails } from "@/data/vip";
 import { FiStar, FiCheckCircle, FiClock } from "react-icons/fi";
+import Image from "next/image";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -18,10 +19,13 @@ const VIPPage: React.FC = () => {
                         {/* Left Column - Image */}
                         <div className="relative">
                             <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-orange-500/20 mix-blend-overlay z-10"></div>
-                            <img 
+                            <Image 
                                 src={vipOfferDetails.imageSrc}
                                 alt="VIP Tracer Tag Offer"
-                                className="w-full h-full object-contain"
+                                fill
+                                className="object-contain"
+                                sizes="(max-width: 1024px) 100vw, 50vw"
+                                priority
                             />
                             {/* VIP Badge */}
                             <div className="absolute top-8 left-8 z-20">

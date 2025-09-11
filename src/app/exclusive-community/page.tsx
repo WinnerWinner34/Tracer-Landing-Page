@@ -1,5 +1,6 @@
 import { communityOfferDetails } from "@/data/community";
 import { FiUsers, FiCheckCircle, FiMessageSquare } from "react-icons/fi";
+import Image from "next/image";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -18,10 +19,13 @@ const CommunityPage: React.FC = () => {
                         {/* Left Column - Image */}
                         <div className="relative">
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 mix-blend-overlay z-10"></div>
-                            <img 
+                            <Image 
                                 src={communityOfferDetails.imageSrc}
                                 alt="Exclusive Fleet Manager Community"
-                                className="w-full h-full object-contain"
+                                fill
+                                className="object-contain"
+                                sizes="(max-width: 1024px) 100vw, 50vw"
+                                priority
                             />
                             {/* Community Badge */}
                             <div className="absolute top-8 left-8 z-20">
