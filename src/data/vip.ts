@@ -1,0 +1,19 @@
+export const vipOfferDetails = {
+    heading: "Exclusive VIP Pre-Launch Offer",
+    subheading: "Get Your Tracer Tag Before Anyone Else",
+    offer: {
+        title: "Reserve Your Tracer Tag for Just $1",
+        description: "Lock in the deepest discount available - better than our upcoming Kickstarter pricing. Plus get an exclusive Tracer window cling.",
+        features: [
+            "Deeper discount than Kickstarter pricing",
+            "Exclusive Tracer window cling included",
+            "Priority shipping when available",
+            "VIP member status"
+        ],
+        urgency: "Limited time offer - ends before Kickstarter launch",
+        reservationPrice: "$1",
+        buttonText: "Reserve My Tracer Tag",
+        paymentUrl: "https://buy.stripe.com/test_6oU00j1vM0vAfTb2330co00" // Placeholder for payment page URL
+    },
+    imageSrc: "/images/Tracer-gradient-white-black.jpg" // Placeholder image path
+};

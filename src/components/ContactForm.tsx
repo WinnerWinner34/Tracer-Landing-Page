@@ -261,24 +261,16 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
                 )}
               </div>
               
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`${buttonClass} ${buttonVariantClass} sm:w-auto w-full`}
+              <a
+                href="/vip"
+                className={`${buttonClass} ${buttonVariantClass} sm:w-auto w-full no-underline`}
                 aria-label="Get started with fleet tracking"
               >
-                {isSubmitting ? (
-                  <>
-                    <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white"></span>
-                    <span>Processing...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Get Started</span>
-                    <FiArrowRight size={16} />
-                  </>
-                )}
-              </button>
+                <>
+                  <span>Get Started</span>
+                  <FiArrowRight size={16} />
+                </>
+              </a>
             </div>
 
             {/* Error Message */}

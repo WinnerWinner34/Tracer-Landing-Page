@@ -31,3 +31,31 @@ export interface ISocials {
     x?: string;
     [key: string]: string | undefined;
 }
+
+export interface IVIPOffer {
+    heading: string;
+    subheading: string;
+    offer: {
+        title: string;
+        description: string;
+        features: string[];
+        urgency: string;
+        reservationPrice: string;
+        buttonText: string;
+        paymentUrl: string;
+    };
+    imageSrc: string;
+}
+
+export interface ICommunityOffer {
+    heading: string;
+    subheading: string;
+    offer: {
+        title: string;
+        description: string;
+        features: string[];
+        buttonText: string;
+        communityUrl: string;
+    };
+    imageSrc: string;
+}

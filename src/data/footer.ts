@@ -20,6 +20,10 @@ export const footerDetails: {
         {
             text: "Testimonials",
             url: "#testimonials"
+        },
+        {
+            text: "VIP Access",
+            url: "/vip"
         }
     ],
     email: 'address@yoursite.com',
