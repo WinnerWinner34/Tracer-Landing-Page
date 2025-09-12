@@ -416,7 +416,7 @@ const createBrevoContact = async (email: string): Promise<boolean> => {
       },
       body: JSON.stringify({
         email,
-        extId: 'general-contact',
+        listIds: [5],
         attributes: {
           FIRSTNAME: 'Fleet',
           LASTNAME: 'Manager'

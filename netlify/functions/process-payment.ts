@@ -34,39 +34,9 @@ emailApi.setApiKey(
 // Update Brevo contact to VIP status
 const updateBrevoContact = async (email: string): Promise<boolean> => {
   try {
-    try {
-      // Update contact with VIP status - Fixed: Convert boolean to string
-      const updateContactRequest = new brevo.UpdateContact();
-      updateContactRequest.extId = 'vip-customer';
-      updateContactRequest.attributes = {
-        VIP_STATUS: 'true', // Fixed: String instead of boolean
-        VIP_PURCHASE_DATE: new Date().toISOString(),
-        CUSTOMER_TYPE: 'VIP'
-      };
-
-      await contactsApi.updateContact(email, updateContactRequest);
-      console.log(`Brevo contact updated to VIP status for: ${email}`);
-      return true;
-    } catch (updateError: any) {
-      // If contact doesn't exist, create it as VIP
-      if (updateError?.status === 404) {
-        const createContactRequest = new brevo.CreateContact();
-        createContactRequest.email = email;
-        createContactRequest.extId = 'vip-customer';
-        createContactRequest.attributes = {
-          FIRSTNAME: 'Fleet',
-          LASTNAME: 'Manager',
-          VIP_STATUS: 'true', // Fixed: String instead of boolean
-          VIP_PURCHASE_DATE: new Date().toISOString(),
-          CUSTOMER_TYPE: 'VIP'
-        };
-
-        await contactsApi.createContact(createContactRequest);
-        console.log(`Brevo VIP contact created for: ${email}`);
-        return true;
-      }
-      throw updateError;
-    }
+    await contactsApi.addContactToList(email, 6);
+    console.log(`Contact added to VIP list for: ${email}`);
+    return true;
   } catch (error) {
     console.error('Brevo contact update error:', error);
     return false;
