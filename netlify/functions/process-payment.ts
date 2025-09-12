@@ -34,7 +34,14 @@ emailApi.setApiKey(
 // Update Brevo contact to VIP status
 const updateBrevoContact = async (email: string): Promise<boolean> => {
   try {
-    await contactsApi.addContactToList(email, 6);
+    const updateContact = new brevo.UpdateContact();
+    updateContact.listIds = [6];
+    updateContact.attributes = {
+      VIP_STATUS: 'true',
+      VIP_PURCHASE_DATE: new Date().toISOString(),
+      CUSTOMER_TYPE: 'VIP'
+    };
+    await contactsApi.updateContact(email, updateContact);
     console.log(`Contact added to VIP list for: ${email}`);
     return true;
   } catch (error) {
