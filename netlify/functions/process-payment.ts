@@ -34,9 +34,6 @@ emailApi.setApiKey(
 // Update Brevo contact to VIP status
 const updateBrevoContact = async (email: string): Promise<boolean> => {
   try {
-    // First, try to get the existing contact
-    const getContactRequest = new brevo.GetContactInfo();
-    
     try {
       // Update contact with VIP status
       const updateContactRequest = new brevo.UpdateContact();
