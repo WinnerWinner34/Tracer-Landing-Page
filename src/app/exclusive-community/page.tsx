@@ -1,17 +1,94 @@
+'use client';
+
 import { communityOfferDetails } from "@/data/community";
 import { FiUsers, FiCheckCircle, FiMessageSquare } from "react-icons/fi";
 import Image from "next/image";
-import type { Metadata } from "next";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
 
-export const metadata: Metadata = {
-    title: "Exclusive Fleet Manager Community - Tracer Fleet Tracking",
-    description: "Join our exclusive community of fleet managers. Influence product development, get early updates, and network with industry experts.",
-    robots: "noindex, nofollow" // Keep private until ready
-};
+const CommunityContent: React.FC = () => {
+    const searchParams = useSearchParams();
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [processingStatus, setProcessingStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
+    const [statusMessage, setStatusMessage] = useState('');
 
-const CommunityPage: React.FC = () => {
+    useEffect(() => {
+        const sessionId = searchParams.get('session_id');
+        
+        if (sessionId) {
+            // Process the payment success
+            setIsProcessing(true);
+            setProcessingStatus('processing');
+            
+            // Call the process-payment function
+            fetch('/.netlify/functions/process-payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ session_id: sessionId }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    setProcessingStatus('success');
+                    setStatusMessage('Your VIP upgrade has been confirmed!');
+                } else {
+                    setProcessingStatus('error');
+                    setStatusMessage(data.message || 'There was an issue processing your upgrade.');
+                }
+            })
+            .catch(error => {
+                console.error('Payment processing error:', error);
+                setProcessingStatus('error');
+                setStatusMessage('Unable to process your upgrade. Please contact support.');
+            })
+            .finally(() => {
+                // Hide the processing message after 3 seconds
+                setTimeout(() => {
+                    setIsProcessing(false);
+                }, 3000);
+            });
+        }
+    }, [searchParams]);
+    
     return (
         <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-gray-50 z-50">
+            {/* Processing Overlay */}
+            {isProcessing && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center">
+                    <div className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl">
+                        <div className="text-center">
+                            {processingStatus === 'processing' && (
+                                <>
+                                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">Processing your VIP upgrade...</h3>
+                                    <p className="text-gray-600">Please wait while we update your account.</p>
+                                </>
+                            )}
+                            {processingStatus === 'success' && (
+                                <>
+                                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 mb-4">
+                                        <FiCheckCircle className="text-green-600" size={24} />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">Success!</h3>
+                                    <p className="text-gray-600">{statusMessage}</p>
+                                </>
+                            )}
+                            {processingStatus === 'error' && (
+                                <>
+                                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4">
+                                        <span className="text-red-600 text-2xl">!</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">Processing Issue</h3>
+                                    <p className="text-gray-600">{statusMessage}</p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+            
             {/* Community Offer Section */}
             <section className="h-screen flex items-center">
                 <div className="w-full h-full">
@@ -98,6 +175,23 @@ const CommunityPage: React.FC = () => {
                 </div>
             </section>
         </div>
+    );
+};
+
+const CommunityPage: React.FC = () => {
+    return (
+        <Suspense 
+            fallback={
+                <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+                        <p className="text-gray-600">Loading...</p>
+                    </div>
+                </div>
+            }
+        >
+            <CommunityContent />
+        </Suspense>
     );
 };
 
