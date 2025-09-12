@@ -15,7 +15,7 @@ const FROM_NAME = process.env.FROM_NAME || 'Tracer Fleet Tracking';
 
 // Initialize Stripe
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2025-08-27.basil',
+  apiVersion: '2023-10-16', // Use stable API version
 });
 
 // Initialize Brevo API clients
@@ -35,11 +35,11 @@ emailApi.setApiKey(
 const updateBrevoContact = async (email: string): Promise<boolean> => {
   try {
     try {
-      // Update contact with VIP status
+      // Update contact with VIP status - Fixed: Convert boolean to string
       const updateContactRequest = new brevo.UpdateContact();
       updateContactRequest.extId = 'vip-customer';
       updateContactRequest.attributes = {
-        VIP_STATUS: true,
+        VIP_STATUS: 'true', // Fixed: String instead of boolean
         VIP_PURCHASE_DATE: new Date().toISOString(),
         CUSTOMER_TYPE: 'VIP'
       };
@@ -56,7 +56,7 @@ const updateBrevoContact = async (email: string): Promise<boolean> => {
         createContactRequest.attributes = {
           FIRSTNAME: 'Fleet',
           LASTNAME: 'Manager',
-          VIP_STATUS: true,
+          VIP_STATUS: 'true', // Fixed: String instead of boolean
           VIP_PURCHASE_DATE: new Date().toISOString(),
           CUSTOMER_TYPE: 'VIP'
         };
@@ -103,134 +103,114 @@ const sendVIPWelcomeEmail = async (email: string): Promise<boolean> => {
           .email-header {
             background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
             color: #ffffff;
-            padding: 48px 24px;
+            padding: 40px 30px;
             text-align: center;
           }
+          .email-body {
+            padding: 40px 30px;
+          }
+          .email-footer {
+            background-color: #f9fafb;
+            padding: 20px 30px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+          }
           .vip-badge {
-            display: inline-block;
-            background-color: rgba(255, 255, 255, 0.2);
+            background-color: #fbbf24;
+            color: #1f2937;
             padding: 8px 16px;
             border-radius: 20px;
             font-weight: bold;
-            margin-bottom: 16px;
+            display: inline-block;
+            margin-bottom: 20px;
           }
-          .email-content {
-            padding: 40px 24px;
+          .feature-list {
+            background-color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
           }
-          .benefit-item {
+          .feature-item {
             display: flex;
-            align-items: start;
-            margin-bottom: 16px;
+            align-items: center;
+            margin-bottom: 10px;
           }
-          .benefit-icon {
-            color: #f97316;
+          .checkmark {
+            background-color: #10b981;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin-right: 12px;
-            font-size: 20px;
+            font-size: 12px;
           }
           .cta-button {
-            display: inline-block;
-            background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
-            color: #000000;
-            padding: 14px 32px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 15px 30px;
             text-decoration: none;
             border-radius: 8px;
-            font-weight: 600;
-            margin: 24px 0;
-          }
-          .footer {
-            background-color: #f9fafb;
-            padding: 24px;
-            text-align: center;
-            font-size: 13px;
-            color: #6b7280;
+            display: inline-block;
+            font-weight: bold;
+            margin-top: 20px;
           }
         </style>
       </head>
       <body>
         <div class="email-container">
           <div class="email-header">
-            <div class="vip-badge">⭐ VIP MEMBER ⭐</div>
-            <h1 style="margin: 0; font-size: 32px;">Welcome to the VIP Club!</h1>
-          </div>
-          
-          <div class="email-content">
-            <h2 style="color: #f97316; margin-top: 0;">Congratulations on Your VIP Upgrade!</h2>
-            
-            <p>Thank you for becoming a VIP member of Tracer Fleet Tracking. Your exclusive benefits are now active!</p>
-            
-            <h3 style="color: #333; margin-top: 32px;">Your VIP Benefits Include:</h3>
-            
-            <div class="benefit-item">
-              <span class="benefit-icon">✓</span>
-              <div>
-                <strong>Deepest Discount Available</strong><br>
-                You've secured our best pricing - better than our upcoming Kickstarter launch!
-              </div>
-            </div>
-            
-            <div class="benefit-item">
-              <span class="benefit-icon">✓</span>
-              <div>
-                <strong>Exclusive Tracer Window Cling</strong><br>
-                A special VIP-only accessory for your vehicle.
-              </div>
-            </div>
-            
-            <div class="benefit-item">
-              <span class="benefit-icon">✓</span>
-              <div>
-                <strong>Priority Shipping</strong><br>
-                Your order will be among the first to ship when available.
-              </div>
-            </div>
-            
-            <div class="benefit-item">
-              <span class="benefit-icon">✓</span>
-              <div>
-                <strong>Early Access & Updates</strong><br>
-                Be the first to know about new features and products.
-              </div>
-            </div>
-            
-            <div class="benefit-item">
-              <span class="benefit-icon">✓</span>
-              <div>
-                <strong>Direct Influence on Development</strong><br>
-                Your feedback will help shape the future of Tracer.
-              </div>
-            </div>
-            
-            <div style="text-align: center; margin: 40px 0;">
-              <a href="https://tracerfleet.com/exclusive-community" class="cta-button">
-                Access VIP Community
-              </a>
-            </div>
-            
-            <div style="background-color: #fef3c7; border-left: 4px solid #f97316; padding: 16px; margin: 32px 0;">
-              <strong>What Happens Next?</strong>
-              <ul style="margin: 8px 0 0 0; padding-left: 20px;">
-                <li>You'll receive updates on production progress</li>
-                <li>We'll notify you before your Tracer ships</li>
-                <li>Access to exclusive VIP community resources</li>
-                <li>Direct line to our product team for feedback</li>
-              </ul>
-            </div>
-            
-            <p>If you have any questions, reply to this email and our VIP support team will assist you promptly.</p>
-            
-            <p style="margin-top: 32px;">
-              Welcome to the Tracer family!<br>
-              <strong>The Tracer Fleet Tracking Team</strong>
+            <div class="vip-badge">🌟 VIP MEMBER</div>
+            <h1 style="margin: 0; font-size: 28px;">Welcome to Tracer VIP!</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">
+              You're now part of our exclusive community
             </p>
           </div>
           
-          <div class="footer">
-            <p style="margin: 0 0 8px 0;">
-              <strong>Tracer Fleet Tracking</strong><br>
-              Next-generation fleet management solutions
+          <div class="email-body">
+            <h2 style="color: #1f2937; margin-bottom: 20px;">Your VIP Benefits Are Active!</h2>
+            
+            <p style="margin-bottom: 20px;">
+              Thank you for upgrading to VIP membership! You now have access to exclusive features and priority support.
             </p>
-            <p style="margin: 8px 0; font-size: 11px; color: #9ca3af;">
-              © ${new Date().getFullYear()} Tracer Fleet Tracking. All rights reserved.<br>
+            
+            <div class="feature-list">
+              <div class="feature-item">
+                <div class="checkmark">✓</div>
+                <span>Priority customer support</span>
+              </div>
+              <div class="feature-item">
+                <div class="checkmark">✓</div>
+                <span>Advanced fleet analytics</span>
+              </div>
+              <div class="feature-item">
+                <div class="checkmark">✓</div>
+                <span>Early access to new features</span>
+              </div>
+              <div class="feature-item">
+                <div class="checkmark">✓</div>
+                <span>Exclusive webinars and training</span>
+              </div>
+              <div class="feature-item">
+                <div class="checkmark">✓</div>
+                <span>Custom reporting dashboard</span>
+              </div>
+            </div>
+            
+            <p style="margin-top: 30px;">
+              Our team will be in touch within 24 hours to help you get the most out of your VIP membership.
+            </p>
+            
+            <a href="https://tracerfleet.com/vip-dashboard" class="cta-button">
+              Access Your VIP Dashboard
+            </a>
+          </div>
+          
+          <div class="email-footer">
+            <p style="margin: 0; font-size: 14px; color: #6b7280;">
+              © 2024 Tracer Fleet Tracking. All rights reserved.<br>
               You're receiving this because you purchased a VIP membership.
             </p>
           </div>
@@ -239,13 +219,15 @@ const sendVIPWelcomeEmail = async (email: string): Promise<boolean> => {
       </html>
     `;
 
-    const email = new brevo.SendSmtpEmail();
-    email.subject = '🌟 Welcome to Tracer VIP Membership!';
-    email.htmlContent = htmlContent;
-    email.sender = { name: FROM_NAME, email: FROM_EMAIL };
-    email.to = [{ email }];
+    // Fixed: Use correct property name for SendSmtpEmail
+    const emailPayload = {
+      subject: '🌟 Welcome to Tracer VIP Membership!',
+      htmlContent: htmlContent,
+      sender: { name: FROM_NAME, email: FROM_EMAIL },
+      to: [{ email: email }]
+    };
 
-    await emailApi.sendTransacEmail(email);
+    await emailApi.sendTransacEmail(emailPayload);
     console.log('VIP welcome email sent successfully');
     return true;
   } catch (error) {
