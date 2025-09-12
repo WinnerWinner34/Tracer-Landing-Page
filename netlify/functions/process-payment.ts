@@ -15,7 +15,7 @@ const FROM_NAME = process.env.FROM_NAME || 'Tracer Fleet Tracking';
 
 // Initialize Stripe
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16',
+  apiVersion: '2025-08-27.basil',
 });
 
 // Initialize Brevo API clients
