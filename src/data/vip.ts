@@ -13,7 +13,10 @@ export const vipOfferDetails = {
         urgency: "Limited time offer - ends before Kickstarter launch",
         reservationPrice: "$1",
         buttonText: "Reserve My Tracer Tag",
-        paymentUrl: "https://buy.stripe.com/test_6oU00j1vM0vAfTb2330co00" // Placeholder for payment page URL
+        paymentUrl: (email?: string) => {
+            const baseUrl = "https://buy.stripe.com/test_6oU00j1vM0vAfTb2330co00";
+            return email ? `${baseUrl}?locked_prefilled_email=${encodeURIComponent(email)}` : baseUrl;
+        }
     },
     imageSrc: "/images/Tracer-gradient-white-black.jpg" // Placeholder image path
 };

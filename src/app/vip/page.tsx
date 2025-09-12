@@ -87,10 +87,7 @@ const VIPContent: React.FC = () => {
                                 
                                 {/* CTA Button */}
                                 <a 
-                                    href={email 
-                                        ? `${vipOfferDetails.offer.paymentUrl}?prefilled_email=${encodeURIComponent(email)}`
-                                        : vipOfferDetails.offer.paymentUrl
-                                    }
+                                    href={vipOfferDetails.offer.paymentUrl(email || undefined)}
                                     className="block w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold py-4 px-8 rounded-full text-center text-lg hover:from-yellow-300 hover:to-orange-400 transition-all duration-300 transform hover:scale-105 shadow-xl"
                                 >
                                     {vipOfferDetails.offer.buttonText}
