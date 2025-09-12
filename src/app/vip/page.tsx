@@ -1,15 +1,13 @@
+'use client';
+
 import { vipOfferDetails } from "@/data/vip";
 import { FiStar, FiCheckCircle, FiClock } from "react-icons/fi";
 import Image from "next/image";
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-    title: "VIP Pre-Launch Offer - Tracer Fleet Tracking",
-    description: "Exclusive VIP discount on Tracer tags before Kickstarter launch. Reserve yours for just $1.",
-    robots: "noindex, nofollow" // Keep private until ready
-};
+import { useSearchParams } from "next/navigation";
 
 const VIPPage: React.FC = () => {
+    const searchParams = useSearchParams();
+    const email = searchParams.get('email');
     return (
         <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900 z-50">
             {/* VIP Offer Section */}
@@ -87,7 +85,10 @@ const VIPPage: React.FC = () => {
                                 
                                 {/* CTA Button */}
                                 <a 
-                                    href={vipOfferDetails.offer.paymentUrl}
+                                    href={email 
+                                        ? `${vipOfferDetails.offer.paymentUrl}?prefilled_email=${encodeURIComponent(email)}`
+                                        : vipOfferDetails.offer.paymentUrl
+                                    }
                                     className="block w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold py-4 px-8 rounded-full text-center text-lg hover:from-yellow-300 hover:to-orange-400 transition-all duration-300 transform hover:scale-105 shadow-xl"
                                 >
                                     {vipOfferDetails.offer.buttonText}
