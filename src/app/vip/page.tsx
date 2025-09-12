@@ -4,10 +4,12 @@ import { vipOfferDetails } from "@/data/vip";
 import { FiStar, FiCheckCircle, FiClock } from "react-icons/fi";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-const VIPPage: React.FC = () => {
+const VIPContent: React.FC = () => {
     const searchParams = useSearchParams();
     const email = searchParams.get('email');
+    
     return (
         <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900 z-50">
             {/* VIP Offer Section */}
@@ -104,6 +106,20 @@ const VIPPage: React.FC = () => {
                 </div>
             </section>
         </div>
+    );
+};
+
+const VIPPage: React.FC = () => {
+    return (
+        <Suspense 
+            fallback={
+                <div className="min-h-screen bg-black flex items-center justify-center text-white">
+                    Loading...
+                </div>
+            }
+        >
+            <VIPContent />
+        </Suspense>
     );
 };
 
