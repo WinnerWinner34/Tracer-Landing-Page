@@ -25,6 +25,7 @@ interface ApiResponse {
     field: string;
     message: string;
   }>;
+  redirectUrl?: string;
 }
 
 // Initial form state
@@ -123,8 +124,9 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
       const data: ApiResponse = await response.json();
 
       if (response.ok && data.success) {
-        // Immediate redirect to VIP page
-        window.location.href = '/vip';
+        // Immediate redirect to VIP page with email parameter
+        const redirectUrl = data.redirectUrl || `/vip?email=${encodeURIComponent(formData.email)}`;
+        window.location.href = redirectUrl;
       } else {
         setSubmitStatus('error');
         
