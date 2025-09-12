@@ -123,11 +123,8 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
       const data: ApiResponse = await response.json();
 
       if (response.ok && data.success) {
-        setSubmitStatus('success');
-        setSubmitMessage('Success! Check your email for next steps.');
-        setFormData(initialFormData);
-        setTouched(new Set<keyof FormData>());
-        setErrors({});
+        // Immediate redirect to VIP page
+        window.location.href = '/vip';
       } else {
         setSubmitStatus('error');
         
@@ -261,16 +258,24 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
                 )}
               </div>
               
-              <a
-                href="/vip"
-                className={`${buttonClass} ${buttonVariantClass} sm:w-auto w-full no-underline`}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`${buttonClass} ${buttonVariantClass} sm:w-auto w-full`}
                 aria-label="Get started with fleet tracking"
               >
-                <>
-                  <span>Get Started</span>
-                  <FiArrowRight size={16} />
-                </>
-              </a>
+                {isSubmitting ? (
+                  <>
+                    <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white"></span>
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Get Started</span>
+                    <FiArrowRight size={16} />
+                  </>
+                )}
+              </button>
             </div>
 
             {/* Error Message */}

@@ -404,6 +404,40 @@ const getUserEmailHtml = (name: string): string => {
   `;
 };
 
+// Brevo contact creation function
+const createBrevoContact = async (email: string): Promise<boolean> => {
+  try {
+    const response = await fetch('https://api.brevo.com/v3/contacts', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'api-key': BREVO_API_KEY,
+      },
+      body: JSON.stringify({
+        email,
+        extId: 'general-contact',
+        attributes: {
+          FIRSTNAME: 'Fleet',
+          LASTNAME: 'Manager'
+        }
+      })
+    });
+
+    if (response.ok || response.status === 400) {
+      // 200/201 = created, 400 = already exists (both OK)
+      console.log(`Brevo contact ${response.status === 400 ? 'already exists' : 'created'} for: ${email}`);
+      return true;
+    }
+    
+    console.error('Brevo contact creation failed:', response.status, await response.text());
+    return false;
+  } catch (error) {
+    console.error('Brevo contact creation error:', error);
+    return false;
+  }
+};
+
 // Main handler
 export const handler: Handler = async (
   event: HandlerEvent,
@@ -561,6 +595,12 @@ export const handler: Handler = async (
       };
     }
 
+    // Create Brevo contact (non-blocking - don't fail if this doesn't work)
+    const contactCreated = await createBrevoContact(sanitizedEmail);
+    if (!contactCreated) {
+      console.warn('Contact creation failed, but continuing with email flow');
+    }
+
     // Send user confirmation email
     const userEmail = new brevo.SendSmtpEmail();
     userEmail.subject = 'Thank you for contacting Tracer Fleet Tracking';
@@ -577,7 +617,7 @@ export const handler: Handler = async (
       // Admin notification was already sent successfully
     }
 
-    // Success response
+    // Success response with VIP redirect URL
     return {
       statusCode: 200,
       headers,
@@ -587,7 +627,8 @@ export const handler: Handler = async (
         data: {
           name: sanitizedName,
           email: sanitizedEmail
-        }
+        },
+        redirectUrl: `/vip?email=${encodeURIComponent(sanitizedEmail)}`
       }),
     };
 
