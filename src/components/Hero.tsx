@@ -8,11 +8,18 @@ const Hero: React.FC = () => {
     return (
         <section
             id="hero"
-            className="relative bg-black min-h-screen flex items-center justify-center px-5"
+            className="relative min-h-screen flex items-center justify-center px-5"
+            style={{
+                backgroundImage: 'url(/images/Ubiviewer-Dashboard.jpg)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+            }}
         >
-            {/* Remove the old background elements and replace with simple dark background */}
+            {/* Dark overlay for text readability */}
+            <div className="absolute inset-0 bg-black/50 z-0"></div>
             
-            <div className="max-w-7xl mx-auto w-full">
+            <div className="relative z-10 max-w-7xl mx-auto w-full">
                 {/* Grid Layout - responsive */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                     

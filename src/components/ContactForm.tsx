@@ -212,15 +212,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
         </div>
       ) : (
         <>
-          {/* Form Title */}
-          <div className="text-center mb-6">
-            <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Start Tracking Your Fleet Today
-            </h3>
-            <p className={`text-sm ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
-              Enter your email for a free consultation
-            </p>
-          </div>
+          
 
           {/* Email Form */}
           <form 
@@ -296,10 +288,6 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
               </div>
             )}
 
-            {/* Privacy Note */}
-            <p className={`text-xs text-center ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
-              Free consultation • No credit card required • Start tracking in 24 hours
-            </p>
           </form>
         </>
       )}
