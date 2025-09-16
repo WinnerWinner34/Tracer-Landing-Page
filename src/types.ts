@@ -5,6 +5,7 @@ export interface IMenuItem {
 
 export interface IBenefit {
     title: string;
+    subheading: string;
     description: string;
     imageSrc: string;
 }

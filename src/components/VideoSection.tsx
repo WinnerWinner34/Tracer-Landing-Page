@@ -152,13 +152,14 @@ const VideoSection: React.FC = () => {
 
     return (
         <section className="video-section mb-24 mt-24" ref={containerRef}>
-            <motion.div
-                className="flex flex-col items-center justify-center gap-8 px-5"
-                variants={containerVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-100px" }}
-            >
+            <div className="max-w-[90%] mx-auto">
+                <motion.div
+                    className="flex flex-col items-center justify-center gap-8 px-5"
+                    variants={containerVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: "-100px" }}
+                >
                 {/* Section Title */}
                 <motion.div variants={itemVariants} className="text-center">
                     <SectionTitle>
@@ -252,7 +253,8 @@ const VideoSection: React.FC = () => {
                         Installing Tracer takes less than 5 seconds - just plug and go!
                     </p>
                 </motion.div>
-            </motion.div>
+                </motion.div>
+            </div>
         </section>
     );
 };
