@@ -3,6 +3,7 @@ import Hero from "@/components/Hero";
 import Benefits from "@/components/Benefits/Benefits";
 import Container from "@/components/Container";
 import CTA from "@/components/CTA";
+import Footer from "@/components/Footer";
 
 const HomePage: React.FC = () => {
   return (
@@ -12,9 +13,10 @@ const HomePage: React.FC = () => {
       <Benefits />
       <Container>
         {/* <FAQ /> */}
-        
-        <CTA />
       </Container>
+      
+      <CTA />
+      <Footer />
     </>
   );
 };

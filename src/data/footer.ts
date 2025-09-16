@@ -7,7 +7,7 @@ export const footerDetails: {
     telephone: string;
     socials: ISocials;
 } = {
-    subheading: "Empowering businesses with cutting-edge financial technology solutions.",
+    subheading: "Rest easy with Tracer knowing how your vehicles are being driven, and without breaking the bank.",
     quickLinks: [
         {
             text: "Features",

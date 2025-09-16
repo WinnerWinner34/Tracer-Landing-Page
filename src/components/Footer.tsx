@@ -8,8 +8,8 @@ import { getPlatformIconByName } from '@/utils';
 
 const Footer: React.FC = () => {
     return (
-        <footer className="bg-hero-background text-foreground py-10">
-            <div className="max-w-7xl w-full mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10">
+        <footer className="bg-hero-background text-foreground py-10 rounded-t-3xl -mt-12">
+            <div className="max-w-7xl w-full mx-auto px-6 pt-16 grid grid-cols-1 md:grid-cols-3 gap-10">
                 <div>
                     <Link href="/" className="flex items-center gap-2">
                         <Image 
