@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import React, { useState } from 'react';
 import { Transition } from '@headlessui/react';
 import { HiOutlineXMark, HiBars3 } from 'react-icons/hi2';
-import { FaFingerprint } from 'react-icons/fa';
 
 import Container from './Container';
 import { siteDetails } from '@/data/siteDetails';
@@ -30,7 +30,13 @@ const Header: React.FC = () => {
                     {/* Logo */}
                     <div className="bg-white/70 backdrop-blur-sm border-2 border-black rounded-full px-4 py-2 ml-5 lg:ml-0">
                         <Link href="/" className="flex items-center gap-2">
-                            <FaFingerprint className="text-foreground min-w-fit w-7 h-7" />
+                            <Image 
+                                src="/images/TracerPin-New.svg" 
+                                alt="Tracer Fleet Tracking Icon" 
+                                width={28} 
+                                height={28} 
+                                className="text-foreground min-w-fit w-7 h-7" 
+                            />
                             <span className="manrope text-xl font-semibold text-foreground cursor-pointer">
                                 {siteDetails.siteName}
                             </span>

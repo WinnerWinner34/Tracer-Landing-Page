@@ -1,4 +1,5 @@
 import BenefitSection from "./BenefitSection"
+import VideoSection from "../VideoSection"
 
 import { benefits } from "@/data/benefits"
 
@@ -9,6 +10,7 @@ const Benefits: React.FC = () => {
             {benefits.map((item, index) => {
                 return <BenefitSection key={index} benefit={item} imageAtRight={index % 2 !== 0} index={index} />
             })}
+            <VideoSection />
         </div>
     )
 }
