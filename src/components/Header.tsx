@@ -31,8 +31,8 @@ const Header: React.FC = () => {
                     <div className="bg-white/70 backdrop-blur-sm border-2 border-black rounded-full px-4 py-2 ml-5 lg:ml-0">
                         <Link href="/" className="flex items-center gap-2">
                             <Image 
-                                src="/images/TracerPin-New.svg" 
-                                alt="Tracer Fleet Tracking Icon" 
+                                src={siteDetails.logoIcon} 
+                                alt={siteDetails.logoIconAlt} 
                                 width={28} 
                                 height={28} 
                                 className="text-foreground min-w-fit w-7 h-7" 

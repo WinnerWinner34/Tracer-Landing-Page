@@ -30,7 +30,7 @@ const VIPContent: React.FC = () => {
                             <div className="absolute top-8 left-8 z-20">
                                 <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2">
                                     <FiStar className="text-black" />
-                                    VIP EXCLUSIVE
+                                    {vipOfferDetails.badgeText}
                                 </div>
                             </div>
                         </div>
@@ -41,43 +41,37 @@ const VIPContent: React.FC = () => {
                                 {/* Header */}
                                 <div className="text-center mb-8">
                                     <h1 className="text-4xl lg:text-5xl font-bold mb-4 pb-2 leading-tight bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-                                        Reserve your Tracer Tag!
+                                        {vipOfferDetails.heading}
                                     </h1>
                                     <h2 className="text-2xl lg:text-3xl font-medium text-gray-300">
-                                        Join VIP for
+                                        {vipOfferDetails.subheading}
                                     </h2>
                                 </div>
                                 
                                 {/* Price Section */}
                                 <div className="text-center mb-8">
                                     <div className="text-6xl font-bold text-yellow-400 mb-6">
-                                        $1
+                                        {vipOfferDetails.offer.reservationPrice}
                                     </div>
                                     <h2 className="text-2xl lg:text-3xl font-medium text-gray-300">
-                                        and get...
+                                        {vipOfferDetails.priceCallout}
                                     </h2>
                                 </div>
                                 
                                 {/* Features List */}
                                 <ul className="space-y-4 mb-8 text-xl">
-                                    <li className="flex items-center justify-center gap-3 text-gray-300">
-                                        <FiCheckCircle className="text-green-400 flex-shrink-0" />
-                                        Guaranteed Lowest Price
-                                    </li>
-                                    <li className="flex items-center justify-center gap-3 text-gray-300">
-                                        <FiCheckCircle className="text-green-400 flex-shrink-0" />
-                                        Priority Shipping
-                                    </li>
-                                    <li className="flex items-center justify-center gap-3 text-gray-300">
-                                        <FiCheckCircle className="text-green-400 flex-shrink-0" />
-                                        Access to Tracer's exclusive community
-                                    </li>
+                                    {vipOfferDetails.offer.features.map((feature, index) => (
+                                        <li key={index} className="flex items-center justify-center gap-3 text-gray-300">
+                                            <FiCheckCircle className="text-green-400 flex-shrink-0" />
+                                            {feature}
+                                        </li>
+                                    ))}
                                 </ul>
                                 
                                 {/* Urgency Message */}
                                 <div className="flex items-center justify-center gap-2 text-orange-400 text-sm font-medium mb-3">
                                     <FiClock />
-                                    Limited time offer - ends before Kickstarter launch
+                                    {vipOfferDetails.offer.urgency}
                                 </div>
 
                                 {/* CTA Button */}
@@ -85,12 +79,12 @@ const VIPContent: React.FC = () => {
                                     href={vipOfferDetails.offer.paymentUrl(email || undefined)}
                                     className="block w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold py-4 px-8 rounded-full text-center text-lg hover:from-yellow-300 hover:to-orange-400 transition-all duration-300 transform hover:scale-105 shadow-xl mb-4"
                                 >
-                                    Reserve My Tracer Tag
+                                    {vipOfferDetails.offer.buttonText}
                                 </a>
                                 
                                 {/* Security Note */}
                                 <p className="text-center text-gray-500 text-sm">
-                                    Payment Processed with Stripe
+                                    {vipOfferDetails.offer.paymentNote}
                                 </p>
                             </div>
                         </div>

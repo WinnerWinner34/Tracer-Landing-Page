@@ -13,8 +13,8 @@ const Footer: React.FC = () => {
                 <div>
                     <Link href="/" className="flex items-center gap-2">
                         <Image 
-                            src="/images/TracerPin-New.svg" 
-                            alt="Tracer Fleet Tracking Icon" 
+                            src={siteDetails.logoIcon} 
+                            alt={siteDetails.logoIconAlt} 
                             width={28} 
                             height={28} 
                             className="min-w-fit w-5 h-5 md:w-7 md:h-7" 
@@ -28,7 +28,7 @@ const Footer: React.FC = () => {
                     </p>
                 </div>
                 <div>
-                    <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
+                    <h4 className="text-lg font-semibold mb-4">{footerDetails.quickLinksTitle}</h4>
                     <ul className="text-foreground-accent">
                         {footerDetails.quickLinks.map(link => (
                             <li key={link.text} className="mb-2">
@@ -38,7 +38,7 @@ const Footer: React.FC = () => {
                     </ul>
                 </div>
                 <div>
-                    <h4 className="text-lg font-semibold mb-4">Contact Us</h4>
+                    <h4 className="text-lg font-semibold mb-4">{footerDetails.contactTitle}</h4>
 
                     
                     {footerDetails.socials && (
@@ -68,9 +68,9 @@ const Footer: React.FC = () => {
                 </div>
             </div>
             <div className="mt-8 md:text-center text-foreground-accent px-6">
-                <p>Copyright &copy; {new Date().getFullYear()} {siteDetails.siteName}. All rights reserved.</p>
-                <p className="text-sm mt-2 text-gray-500">Made with &hearts; by <a href="https://nexilaunch.com" target="_blank">Nexi Launch</a></p>
-                <p className="text-sm mt-2 text-gray-500">UI kit by <a href="https://ui8.net/youthmind/products/fintech-finance-mobile-app-ui-kit" target="_blank">Youthmind</a></p>
+                <p>{footerDetails.copyrightText} {new Date().getFullYear()} {siteDetails.siteName}. {footerDetails.allRightsReserved}</p>
+                <p className="text-sm mt-2 text-gray-500">{footerDetails.madeWithLove} <a href={footerDetails.nexiLaunchUrl} target="_blank">Nexi Launch</a></p>
+                <p className="text-sm mt-2 text-gray-500">{footerDetails.uiKitCredit} <a href={footerDetails.uiKitUrl} target="_blank">Youthmind</a></p>
             </div>
         </footer>
     );

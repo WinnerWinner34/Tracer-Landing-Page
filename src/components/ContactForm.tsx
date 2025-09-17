@@ -2,6 +2,7 @@
 
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { FiMail, FiArrowRight, FiCheck, FiAlertCircle } from 'react-icons/fi';
+import { contactFormDetails } from '@/data/contactForm';
 
 // Types
 interface FormData {
@@ -49,8 +50,8 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
   };
 
   const validateField = (value: string): string | undefined => {
-    if (!value.trim()) return 'Email is required';
-    if (!validateEmail(value)) return 'Please enter a valid email address';
+    if (!value.trim()) return contactFormDetails.emailRequiredMessage;
+    if (!validateEmail(value)) return contactFormDetails.emailInvalidMessage;
     return undefined;
   };
 
@@ -109,15 +110,15 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
 
     try {
       // Send to Netlify function with full contact data
-      const response = await fetch('/.netlify/functions/send-email', {
+      const response = await fetch(contactFormDetails.apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email: formData.email,
-          name: 'Fleet Manager', // Generic placeholder for email-only form
-          message: `New lead from email capture form. Email: ${formData.email}. Please follow up regarding fleet tracking solutions.`
+          name: contactFormDetails.genericName,
+          message: contactFormDetails.defaultMessage.replace('{email}', formData.email)
         }),
       });
 
@@ -125,7 +126,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
 
       if (response.ok && data.success) {
         // Immediate redirect to VIP page with email parameter
-        const redirectUrl = data.redirectUrl || `/vip?email=${encodeURIComponent(formData.email)}`;
+        const redirectUrl = data.redirectUrl || `${contactFormDetails.defaultRedirectUrl}?email=${encodeURIComponent(formData.email)}`;
         window.location.href = redirectUrl;
       } else {
         setSubmitStatus('error');
@@ -138,12 +139,12 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
           }
         }
         
-        setSubmitMessage(data.message || data.error || 'Something went wrong. Please try again.');
+        setSubmitMessage(data.message || data.error || contactFormDetails.defaultErrorMessage);
       }
     } catch (error) {
       console.error('Submit error:', error);
       setSubmitStatus('error');
-      setSubmitMessage('Unable to process. Please check your connection and try again.');
+      setSubmitMessage(contactFormDetails.connectionErrorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -194,7 +195,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
           </div>
           <div>
             <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              You&apos;re all set!
+              {contactFormDetails.successTitle}
             </h3>
             <p className={`text-sm ${isDark ? 'text-white/80' : 'text-gray-600'}`}>
               {submitMessage}
@@ -207,7 +208,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
             }}
             className={`text-sm ${isDark ? 'text-white/70 hover:text-white' : 'text-gray-500 hover:text-gray-700'} underline transition-colors`}
           >
-            Submit another email
+            {contactFormDetails.submitAnotherEmailText}
           </button>
         </div>
       ) : (
@@ -223,7 +224,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
                 <label htmlFor="email" className="sr-only">
-                  Email Address
+                  {contactFormDetails.emailLabel}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -236,7 +237,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
                     value={formData.email}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    placeholder="Enter your business email"
+                    placeholder={contactFormDetails.emailPlaceholder}
                     className={`${inputClass} pl-10 ${errors.email && touched.has('email') ? 'border-red-500' : ''}`}
                     aria-invalid={!!errors.email && touched.has('email')}
                     aria-describedby={errors.email && touched.has('email') ? 'email-error' : undefined}
@@ -261,11 +262,11 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
                 {isSubmitting ? (
                   <>
                     <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white"></span>
-                    <span>Processing...</span>
+                    <span>{contactFormDetails.processingButtonText}</span>
                   </>
                 ) : (
                   <>
-                    <span>Get Started</span>
+                    <span>{contactFormDetails.submitButtonText}</span>
                     <FiArrowRight size={16} />
                   </>
                 )}

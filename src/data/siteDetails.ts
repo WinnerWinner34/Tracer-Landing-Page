@@ -8,5 +8,9 @@ export const siteDetails = {
     language: 'en-us',
     locale: 'en-US',
     siteLogo: `${process.env.BASE_PATH || ''}/images/logo.png`, // or use a string for the logo e.g. "TechStartup"
+    logoIcon: '/images/TracerPin-New.svg',
+    logoIconAlt: 'Tracer Fleet Tracking Icon',
     googleAnalyticsId: '', // e.g. G-XXXXXXX,
+    openGraphImage: '/images/og-image.jpg',
+    twitterImage: '/images/twitter-image.jpg',
 }

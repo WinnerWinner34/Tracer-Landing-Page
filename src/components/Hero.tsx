@@ -10,7 +10,7 @@ const Hero: React.FC = () => {
             id="hero"
             className="relative min-h-screen flex items-center justify-center px-5"
             style={{
-                backgroundImage: 'url(/images/Ubiviewer-Dashboard.jpg)',
+                backgroundImage: `url(${heroDetails.backgroundImageSrc})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat'
