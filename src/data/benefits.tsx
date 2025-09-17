@@ -17,12 +17,12 @@ export const benefits: IBenefit[] = [
         title: "Instant Notifications",
         subheading: "Get notified the instant something happens",
         description: "When every minute counts, instant notifications can mean the difference between a minor incident and a major crisis. Tracer can alert you immediately when vehicles crash, leave authorized zones, or exhibit dangerous behaviors - so you can respond before small problems become big ones.",
-        imageSrc: "/images/Ubiviewer-Dashboard-Columbus-with-Pins.webp"
+        imageSrc: "/images/AlertLikelyVehicleCrash.png"
     },
     {
-        title: "Automated Reports",
-        subheading: "Forget spreadsheets - your reports write themselves",
-        description: "Forget about manually tracking driver behavior or crunching numbers in spreadsheets. Tracer does the heavy lifting and delivers clear reports showing your most efficient drivers, your biggest cost drains, and everything in between.",
+        title: "Geofences",
+        subheading: "Know when a vehicle enters or leaves a zone",
+        description: "Geofencing lets you draw virtual boundaries on the map and receive instant alerts the moment a vehicle enters or exits. Whether it's leaving the depot at dawn, arriving at the first job site, or straying from its assigned territory, you'll know the moment it happens—so you can relax knowing your fleet is exactly where it should be.",
         imageSrc: "/images/Ubiviewer-Dashboard-Columbus-with-Pins.webp"
     },
 ]

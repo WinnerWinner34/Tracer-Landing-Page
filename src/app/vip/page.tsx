@@ -18,7 +18,6 @@ const VIPContent: React.FC = () => {
                     <div className="grid lg:grid-cols-2 h-full">
                         {/* Left Column - Image */}
                         <div className="relative">
-                            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-orange-500/20 mix-blend-overlay z-10"></div>
                             <Image 
                                 src={vipOfferDetails.imageSrc}
                                 alt="VIP Tracer Tag Offer"
@@ -38,64 +37,60 @@ const VIPContent: React.FC = () => {
                         
                         {/* Right Column - Content */}
                         <div className="flex items-center justify-center p-8 lg:p-12">
-                            <div className="max-w-lg text-white">
+                            <div className="max-w-2xl text-white">
                                 {/* Header */}
-                                <h1 className="text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-                                    {vipOfferDetails.heading}
-                                </h1>
-                                
-                                <h2 className="text-xl lg:text-2xl text-gray-300 mb-8">
-                                    {vipOfferDetails.subheading}
-                                </h2>
-                                
-                                {/* Offer Details */}
-                                <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-yellow-400/20">
-                                    <h3 className="text-2xl font-bold mb-4 text-yellow-400">
-                                        {vipOfferDetails.offer.title}
-                                    </h3>
-                                    
-                                    <p className="text-gray-300 mb-6">
-                                        {vipOfferDetails.offer.description}
-                                    </p>
-                                    
-                                    {/* Features List */}
-                                    <ul className="space-y-3 mb-6">
-                                        {vipOfferDetails.offer.features.map((feature, index) => (
-                                            <li key={index} className="flex items-center gap-3 text-gray-300">
-                                                <FiCheckCircle className="text-green-400 flex-shrink-0" />
-                                                {feature}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    
-                                    {/* Urgency */}
-                                    <div className="flex items-center gap-2 text-orange-400 text-sm font-medium">
-                                        <FiClock />
-                                        {vipOfferDetails.offer.urgency}
-                                    </div>
-                                </div>
-                                
-                                {/* Reservation Price */}
                                 <div className="text-center mb-8">
-                                    <div className="text-5xl font-bold text-yellow-400 mb-2">
-                                        {vipOfferDetails.offer.reservationPrice}
-                                    </div>
-                                    <div className="text-gray-400">
-                                        Reservation Fee
-                                    </div>
+                                    <h1 className="text-4xl lg:text-5xl font-bold mb-4 pb-2 leading-tight bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                                        Reserve your Tracer Tag!
+                                    </h1>
+                                    <h2 className="text-2xl lg:text-3xl font-medium text-gray-300">
+                                        Join VIP for
+                                    </h2>
                                 </div>
                                 
+                                {/* Price Section */}
+                                <div className="text-center mb-8">
+                                    <div className="text-6xl font-bold text-yellow-400 mb-6">
+                                        $1
+                                    </div>
+                                    <h2 className="text-2xl lg:text-3xl font-medium text-gray-300">
+                                        and get...
+                                    </h2>
+                                </div>
+                                
+                                {/* Features List */}
+                                <ul className="space-y-4 mb-8 text-xl">
+                                    <li className="flex items-center justify-center gap-3 text-gray-300">
+                                        <FiCheckCircle className="text-green-400 flex-shrink-0" />
+                                        Guaranteed Lowest Price
+                                    </li>
+                                    <li className="flex items-center justify-center gap-3 text-gray-300">
+                                        <FiCheckCircle className="text-green-400 flex-shrink-0" />
+                                        Priority Shipping
+                                    </li>
+                                    <li className="flex items-center justify-center gap-3 text-gray-300">
+                                        <FiCheckCircle className="text-green-400 flex-shrink-0" />
+                                        Access to Tracer's exclusive community
+                                    </li>
+                                </ul>
+                                
+                                {/* Urgency Message */}
+                                <div className="flex items-center justify-center gap-2 text-orange-400 text-sm font-medium mb-3">
+                                    <FiClock />
+                                    Limited time offer - ends before Kickstarter launch
+                                </div>
+
                                 {/* CTA Button */}
                                 <a 
                                     href={vipOfferDetails.offer.paymentUrl(email || undefined)}
-                                    className="block w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold py-4 px-8 rounded-full text-center text-lg hover:from-yellow-300 hover:to-orange-400 transition-all duration-300 transform hover:scale-105 shadow-xl"
+                                    className="block w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold py-4 px-8 rounded-full text-center text-lg hover:from-yellow-300 hover:to-orange-400 transition-all duration-300 transform hover:scale-105 shadow-xl mb-4"
                                 >
-                                    {vipOfferDetails.offer.buttonText}
+                                    Reserve My Tracer Tag
                                 </a>
                                 
                                 {/* Security Note */}
-                                <p className="text-center text-gray-500 text-sm mt-4">
-                                    Secure payment processing • Cancel anytime
+                                <p className="text-center text-gray-500 text-sm">
+                                    Payment Processed with Stripe
                                 </p>
                             </div>
                         </div>

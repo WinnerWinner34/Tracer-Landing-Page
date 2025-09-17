@@ -18,5 +18,5 @@ export const vipOfferDetails = {
             return email ? `${baseUrl}?locked_prefilled_email=${encodeURIComponent(email)}` : baseUrl;
         }
     },
-    imageSrc: "/images/Tracer-gradient-white-black.jpg" // Placeholder image path
+    imageSrc: "/images/Tracer-Centered-Gradient-whit-black.jpeg" // Placeholder image path
 };
