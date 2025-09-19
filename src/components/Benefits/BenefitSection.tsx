@@ -78,7 +78,7 @@ const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight, index }: Props
                                 {subheading}
                             </h4>
 
-                            <p className="mt-1.5 mx-auto lg:ml-0 leading-normal text-foreground-accent">
+                            <p className="mt-1.5 mx-auto lg:ml-0 leading-normal text-gray-900">
                                 {description}
                             </p>
                         </motion.div>
@@ -94,7 +94,6 @@ const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight, index }: Props
     lg:h-[600px] 
     overflow-hidden 
     rounded-xl
-    border border-black
 ">
                             <Image 
                                 src={imageSrc} 

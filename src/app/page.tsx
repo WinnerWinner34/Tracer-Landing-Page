@@ -4,12 +4,14 @@ import Benefits from "@/components/Benefits/Benefits";
 import Container from "@/components/Container";
 import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
+import Tagline from "@/components/Tagline";
 
 const HomePage: React.FC = () => {
   return (
     <>
       <Hero />
       <CTA />
+      <Tagline />
       <Benefits />
       <Container>
         {/* <FAQ /> */}

@@ -266,8 +266,8 @@ const ContactForm: React.FC<ContactFormProps> = ({ variant = 'light', className 
                   </>
                 ) : (
                   <>
-                    <span>{contactFormDetails.submitButtonText}</span>
-                    <FiArrowRight size={16} />
+                    <span className="text-red-600">{contactFormDetails.submitButtonText}</span>
+                    <FiArrowRight size={16} className="text-red-600" />
                   </>
                 )}
               </button>

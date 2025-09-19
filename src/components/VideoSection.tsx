@@ -119,7 +119,9 @@ const VideoSection: React.FC = () => {
                             </h3>
                         </SectionTitle>
                         <p className="mt-4 text-lg text-foreground-accent max-w-2xl mx-auto">
-                            {videoDetails.description}
+                            {videoDetails.descriptionParts.prefix}
+                            <span className="text-red-600">{videoDetails.descriptionParts.highlight}</span>
+                            {videoDetails.descriptionParts.suffix}
                         </p>
                     </motion.div>
 

@@ -5,8 +5,8 @@ export interface IMenuItem {
 
 export interface IBenefit {
     title: string;
-    subheading: string;
-    description: string;
+    subheading: string | React.ReactElement;
+    description: string | React.ReactElement;
     imageSrc: string;
 }
 
