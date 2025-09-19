@@ -15,7 +15,7 @@ export const vipOfferDetails = {
         buttonText: "Reserve My Tracer Tag",
         paymentNote: "Payment Processed with Stripe",
         paymentUrl: (email?: string) => {
-            const baseUrl = "https://buy.stripe.com/test_6oU00j1vM0vAfTb2330co00";
+            const baseUrl = "https://buy.stripe.com/eVqcMY09Pa4ocMy1ywaIM00";
             return email ? `${baseUrl}?locked_prefilled_email=${encodeURIComponent(email)}` : baseUrl;
         }
     },
