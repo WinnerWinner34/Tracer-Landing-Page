@@ -3,7 +3,7 @@ import { taglineDetails } from '@/data/tagline';
 
 const Tagline: React.FC = () => {
     return (
-        <section className="py-16 md:py-24">
+        <section id="tagline" className="py-16 md:py-24">
             <div className="max-w-5xl mx-auto px-6">
                 <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center text-foreground leading-relaxed">
                     {taglineDetails.textParts.prefix}

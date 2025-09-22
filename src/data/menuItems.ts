@@ -2,19 +2,19 @@ import { IMenuItem } from "@/types";
 
 export const menuItems: IMenuItem[] = [
     {
+        text: "What is Tracer",
+        url: "#tagline"
+    },
+    {
         text: "Features",
         url: "#features"
     },
     {
-        text: "Pricing",
-        url: "#pricing"
+        text: "5-Seconds",
+        url: "#video"
     },
     {
-        text: "Testimonials",
-        url: "#testimonials"
-    },
-    {
-        text: "VIP Access",
-        url: "/vip"
+        text: "Updates & VIP",
+        url: "#bottom-cta"
     }
 ];

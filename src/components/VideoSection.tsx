@@ -102,7 +102,7 @@ const VideoSection: React.FC = () => {
     };
 
     return (
-        <section className="video-section mb-24 mt-24" ref={containerRef}>
+        <section id="video" className="video-section mb-24 mt-24" ref={containerRef}>
             <div className="max-w-[90%] mx-auto">
                 <motion.div
                     className="flex flex-col items-center justify-center gap-8 px-5"

@@ -17,7 +17,7 @@ const HomePage: React.FC = () => {
         {/* <FAQ /> */}
       </Container>
       
-      <CTA />
+      <CTA id="bottom-cta" />
       <Footer />
     </>
   );

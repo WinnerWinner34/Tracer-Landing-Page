@@ -49,7 +49,7 @@ const Header: React.FC = () => {
                             <li key={item.text}>
                                 <Link 
                                     href={item.url} 
-                                    className="inline-block px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-black rounded-full text-black font-medium hover:bg-white/80 transition-all duration-200"
+                                    className="inline-block min-w-[150px] px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-black rounded-full text-black font-medium hover:bg-white/80 transition-all duration-200 text-center"
                                 >
                                     {item.text}
                                 </Link>
@@ -93,7 +93,7 @@ const Header: React.FC = () => {
                             <li key={item.text}>
                                 <Link 
                                     href={item.url} 
-                                    className="inline-block px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-black rounded-full text-black font-medium hover:bg-white/80 transition-all duration-200"
+                                    className="inline-block min-w-[150px] px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-black rounded-full text-black font-medium hover:bg-white/80 transition-all duration-200 text-center"
                                     onClick={toggleMenu}
                                 >
                                     {item.text}
