@@ -1,8 +1,3 @@
-# Backup current .gitignore (just in case)
-Copy-Item .gitignore .gitignore.backup
-
-# Create comprehensive .gitignore
-@"
 # ==============================================================================
 # Build Artifacts
 # ==============================================================================
@@ -19,20 +14,15 @@ build/
 *.a
 *.lib
 
-# Merged firmware outputs
-merged.hex
-merged.bin
-app_update.bin
+# Build logs
+build_log.txt
+*.log
 
 # CMake build files
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 Makefile
-
-# Build logs
-build_log.txt
-*.log
 
 # ==============================================================================
 # nRF Connect SDK / Zephyr
@@ -42,54 +32,27 @@ build_log.txt
 .config.old
 .cache/
 zephyr/.config
-zephyr/CMakeCache.txt
 *.dts.pre.tmp
 *.dts_compiled
 
 # ==============================================================================
 # IDE and Editor Files
 # ==============================================================================
-
-# Visual Studio Code
 .vscode/*
-!.vscode/extensions.json
 !.vscode/settings.json
-!.vscode/tasks.json
 .history/
-
-# IntelliJ / CLion
 .idea/
 *.iml
-*.iws
-*.ipr
-cmake-build-*/
-
-# Editors
 *.swp
 *.swo
 *~
-.*.sw?
 
 # ==============================================================================
 # Operating System Files
 # ==============================================================================
-
-# Windows
 Thumbs.db
-ehthumbs.db
-Desktop.ini
-`$RECYCLE.BIN/
-*.lnk
-
-# macOS
 .DS_Store
-.AppleDouble
-.LSOverride
-._*
-
-# Linux
-.directory
-.Trash-*
+Desktop.ini
 
 # ==============================================================================
 # Certificates and Secrets
@@ -97,30 +60,12 @@ Desktop.ini
 *.pem
 *.key
 *.crt
-*.cer
-!*_template.*
-!*_example.*
 secrets.h
 secrets.conf
 .env
-.env.local
 
 # ==============================================================================
-# Logs and Debug Output
+# Debug Output
 # ==============================================================================
-*.log
-logs/
-debug/
 *.rtt
 *.jlink
-
-# ==============================================================================
-# Keep These Files
-# ==============================================================================
-!README.md
-!prj.conf
-!CMakeLists.txt
-!Kconfig
-"@ | Out-File -FilePath .gitignore -Encoding utf8 -NoNewline
-
-Write-Host "✅ .gitignore updated!" -ForegroundColor Green
