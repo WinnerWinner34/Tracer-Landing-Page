@@ -16,14 +16,37 @@
 
 #include "transmission_manager.h"
 
+/* ============================================================================
+ * MODEM FAULT HANDLER - Catches modem faults before system reset
+ * This handler will print diagnostic information if the modem crashes
+ * ============================================================================ */
+void nrf_modem_fault_handler(struct nrf_modem_fault_info *fault_info)
+{
+	printk("\n\n");
+	printk("============================================\n");
+	printk("❌❌❌ MODEM FAULT DETECTED! ❌❌❌\n");
+	printk("============================================\n");
+	printk("Reason: %d\n", fault_info->reason);
+	printk("Program counter: 0x%08x\n", (unsigned int)fault_info->program_counter);
+	printk("============================================\n\n");
+
+	/* Halt instead of reset so we can see the fault in RTT */
+	printk("System halted. Reset device to try again.\n");
+	while(1) {
+		k_sleep(K_SECONDS(1));
+	}
+}
+
 /* Configuration */
 #define GPS_BUFFER_SIZE 100
 #define GPS_TIMEOUT_MS 90000
 #define GPS_ACCURACY_THRESHOLD 50.0
-#define LTE_INITIAL_TIMEOUT_SEC 120
+/* LTE connection timeout - 7 minutes for first-time US Cellular SIM activation
+ * First connection can take 2-5 minutes for roaming authentication and PDN setup */
+#define LTE_INITIAL_TIMEOUT_SEC 420  // Changed from 120 to allow full RRC/PDN connection
 #define LTE_CHECK_INTERVAL_SEC 300
-#define LTE_CHECK_TIMEOUT_SEC 30
-#define LTE_DISCONNECT_GRACE_PERIOD_SEC 30
+#define LTE_CHECK_TIMEOUT_SEC 120
+#define LTE_DISCONNECT_GRACE_PERIOD_SEC 300
 
 /* System state */
 typedef enum {
@@ -159,55 +182,76 @@ static int start_lte_periodic_checks(void)
 static void lte_check_work_handler(struct k_work *work)
 {
 	int err;
-	
+
 	printk("\n⏰ Periodic LTE check starting (30 second attempt)...\n");
-	printk("   GPS tracking continues during check\n");
-	
+	printk("   GPS continues running in background\n");
+
 	current_state = STATE_CHECKING_LTE;
-	
-	/* Temporarily enable LTE alongside GNSS */
-	err = switch_to_normal_mode();
+
+	/* CRITICAL FIX: Set modem to flight mode to allow system mode change */
+	printk("Step 1: Setting modem to flight mode (CFUN=4)...\n");
+	err = nrf_modem_at_printf("AT+CFUN=4");
 	if (err) {
-		printk("ERROR: Failed to switch mode for LTE check\n");
-		/* Try again in 5 minutes */
-		k_work_schedule(&lte_check_work, K_SECONDS(LTE_CHECK_INTERVAL_SEC));
-		return;
+		printk("ERROR: Failed to set CFUN=4: %d\n", err);
+		goto schedule_retry;
 	}
-	
+	k_sleep(K_SECONDS(2));
+
+	/* Step 2: Change system mode to LTE+GNSS */
+	printk("Step 2: Setting system mode to LTE+GNSS...\n");
+	err = nrf_modem_at_printf("AT%%XSYSTEMMODE=1,0,1,0");
+	if (err) {
+		printk("ERROR: Failed to set LTE+GNSS mode: %d\n", err);
+		goto restore_gnss_only;
+	}
+
+	/* Step 3: Activate the modem with new system mode */
+	printk("Step 3: Activating modem (CFUN=1)...\n");
+	err = nrf_modem_at_printf("AT+CFUN=1");
+	if (err) {
+		printk("ERROR: Failed to set CFUN=1: %d\n", err);
+		goto restore_gnss_only;
+	}
+	k_sleep(K_SECONDS(2));
+
+	printk("✅ System mode changed successfully\n");
+	current_state = STATE_NORMAL;
+
 	/* Try to connect to LTE */
 	printk("Attempting LTE connection...\n");
 	k_sem_reset(&lte_connected);
 	err = lte_lc_connect_async(lte_event_handler);
 	if (err) {
 		printk("Failed to start LTE connection: %d\n", err);
-		/* Switch back to GNSS-only and try again later */
-		switch_to_gnss_only_mode();
-		k_work_schedule(&lte_check_work, K_SECONDS(LTE_CHECK_INTERVAL_SEC));
-		return;
+		goto restore_gnss_only;
 	}
-	
+
 	/* Wait up to 30 seconds for connection */
 	err = k_sem_take(&lte_connected, K_SECONDS(LTE_CHECK_TIMEOUT_SEC));
 	if (err) {
-		printk("⏱️  LTE check timeout - no signal found\n");
+		printk("⏱️ LTE check timeout - no signal found\n");
 		printk("   Switching back to GNSS-only mode\n");
-		
-		/* Disconnect LTE attempt */
+
 		lte_lc_offline();
-		
-		/* Switch back to GNSS-only */
-		switch_to_gnss_only_mode();
-		
-		/* Schedule next check */
-		k_work_schedule(&lte_check_work, K_SECONDS(LTE_CHECK_INTERVAL_SEC));
+		goto restore_gnss_only;
 	} else {
 		printk("✅ LTE connection established!\n");
-		printk("   Switching to NORMAL operation mode\n");
+		printk("   Staying in NORMAL operation mode\n");
 		printk("   A-GNSS data will be automatically downloaded\n\n");
-		
+		printk("   GPS thread continues running with A-GNSS support\n");
+
 		/* Stay in NORMAL mode - don't schedule another check */
-		/* The LTE event handler will detect if we lose connection */
+		return;
 	}
+
+restore_gnss_only:
+	/* Switch back to GNSS-only */
+	switch_to_gnss_only_mode();
+
+schedule_retry:
+	/* Schedule next check */
+	k_work_schedule(&lte_check_work, K_SECONDS(LTE_CHECK_INTERVAL_SEC));
+	printk("   GPS thread continues running in standalone mode\n");
 }
 
 /* ============================================================================
@@ -221,13 +265,43 @@ static void lte_event_handler(const struct lte_lc_evt *const evt)
 		case LTE_LC_NW_REG_REGISTERED_HOME:
 		case LTE_LC_NW_REG_REGISTERED_ROAMING:
 			printk("📡 LTE: Registered to network\n");
+
+			/* PDN Activation Diagnostics */
+			{
+				char response[256];
+				int err;
+
+				printk("\n📊 PDN DIAGNOSTICS:\n");
+
+				/* Check PDN context activation status */
+				memset(response, 0, sizeof(response));
+				err = nrf_modem_at_cmd(response, sizeof(response), "AT+CGACT?");
+				if (err == 0) {
+					printk("   PDN Status: %s", response);
+				} else {
+					printk("   PDN Status query failed: %d\n", err);
+				}
+
+				/* Check IP address assignment */
+				memset(response, 0, sizeof(response));
+				err = nrf_modem_at_cmd(response, sizeof(response), "AT+CGPADDR");
+				if (err == 0) {
+					printk("   IP Address: %s", response);
+				} else {
+					printk("   IP query failed: %d\n", err);
+				}
+				printk("📊 END PDN DIAGNOSTICS\n\n");
+			}
+
 			k_sem_give(&lte_connected);
-			
+
 			/* Cancel disconnect grace period if running */
 			k_work_cancel_delayable(&lte_disconnect_work);
-			
+
+			/* Upgrade from NO_LTE to NORMAL mode */
 			if (current_state != STATE_NORMAL) {
-				printk("📡 LTE: Switching to NORMAL mode\n");
+				printk("📡 LTE: Switching to NORMAL mode - A-GNSS now available\n");
+				printk("📡 LTE: Location library will auto-download A-GNSS data\n");
 				current_state = STATE_NORMAL;
 			}
 			break;
@@ -619,6 +693,29 @@ int main(void)
 	}
 	printk("Modem library initialized\n");
 
+	/* Check band configuration for US Cellular compatibility */
+	printk("\n========================================\n");
+	printk("📡 CHECKING BAND CONFIGURATION\n");
+	printk("========================================\n");
+
+	char band_response[256];
+	err = nrf_modem_at_cmd(band_response, sizeof(band_response), "AT%%XBANDLOCK=2");
+	if (err == 0) {
+		printk("📶 Current band lock status:\n%s\n", band_response);
+	} else {
+		printk("⚠️  Failed to query band lock: %d\n", err);
+	}
+
+	/* Query supported bands */
+	err = nrf_modem_at_cmd(band_response, sizeof(band_response), "AT%%XBANDLOCK=1");
+	if (err == 0) {
+		printk("📶 Supported bands:\n%s\n", band_response);
+	} else {
+		printk("⚠️  Failed to query supported bands: %d\n", err);
+	}
+
+	printk("========================================\n\n");
+
 	/* Display device IMEI for SIM activation */
 	{
 		char imei_buf[16] = {0};
@@ -644,164 +741,78 @@ int main(void)
 		printk("========================================\n\n");
 	}
 
-	/* Configure modem system mode */
-	printk("Configuring modem system mode for LTE-M + GNSS...\n");
-	err = nrf_modem_at_printf("AT%%XSYSTEMMODE=1,0,1,0");
+	/* Configure modem system mode - LTE ONLY initially to reduce power surge */
+	printk("Configuring modem system mode for LTE-M only (GNSS added later)...\n");
+	err = nrf_modem_at_printf("AT%%XSYSTEMMODE=1,0,0,0");
 	if (err) {
 		printk("ERROR: Failed to set system mode: %d\n", err);
 	} else {
-		printk("System mode set: LTE-M + GNSS\n");
+		printk("System mode set: LTE-M only\n");
+		printk("   (GNSS will be enabled after LTE connection to prevent power surge)\n");
 	}
-	
-	/* Set modem to full functionality */
-	printk("Setting modem to full functionality (CFUN=1)...\n");
-	err = nrf_modem_at_printf("AT+CFUN=1");
-	if (err) {
-		printk("ERROR: Failed to set CFUN=1: %d\n", err);
-	} else {
-		printk("Modem set to full functionality\n");
-	}
-	
-	/* Wait for modem stabilization */
-	printk("Waiting 10 seconds for modem stabilization...\n");
-	k_sleep(K_SECONDS(10));
-	printk("Modem stabilization complete\n");
 
-	/* Register date/time handler */
+	/* TEMPORARILY DISABLED - These AT commands fail with error 65536 and may cause modem fault
+	 * Will re-enable once modem is stable
+	 * ===================================================================
+	 * EXTERNAL ANTENNA CONFIGURATION - CRITICAL FOR CUSTOM PCB
+	 * Must be configured AFTER system mode but BEFORE CFUN=1
+	 * =================================================================== */
+	/*
+	printk("\n📡 Configuring external LTE/GNSS antennas...\n");
+
+	err = nrf_modem_at_printf("AT%%XCOEX0=0");
+	if (err) {
+		printk("⚠️  COEX disable failed: %d (continuing anyway)\n", err);
+	} else {
+		printk("✅ Coexistence disabled - LTE gets 100%% RF time\n");
+	}
+
+	err = nrf_modem_at_printf("AT%%XMAGPIO=1,0,0,1,1,1574,1577");
+	if (err) {
+		printk("⚠️  MAGPIO config failed: %d\n", err);
+		printk("   WARNING: Modem may use onboard antenna (won't work!)\n");
+	} else {
+		printk("✅ MAGPIO configured for external antenna\n");
+	}
+
+	printk("📡 Antenna configuration complete\n\n");
+	*/
+	/* ================================================================== */
+
+	/* ================================================================== */
+
+
+	/* ================================================================
+	 * LTE INITIALIZATION - Let lte_lc handle everything
+	 * ================================================================ */
+	printk("\n📡 Step 1: Starting LTE connection (non-blocking)...\n");
+	printk("   Modem will connect in background\n");
+	printk("   APN configured via Kconfig\n");
+
+	lte_lc_register_handler(lte_event_handler);
+
 	if (IS_ENABLED(CONFIG_DATE_TIME)) {
 		date_time_register_handler(date_time_evt_handler);
-		printk("Date/time handler registered\n");
+		printk("📅 Date/time handler registered\n");
 	}
 
-	/* ========================================================================
-	 * MODIFIED SECTION: Active Modem Monitoring to Prevent Watchdog Timeout
-	 * ======================================================================== */
-	
-	printk("\n🔷 Initial LTE Connection Attempt (2 minutes)\n");
-	printk("Step 1: Registering LTE handler...\n");
-	lte_lc_register_handler(lte_event_handler);
-	
-	printk("Step 2: Requesting PSM...\n");
 	lte_lc_psm_req(true);
-	
-	printk("Step 3: Starting LTE connection ASYNC (non-blocking)...\n");
+
 	err = lte_lc_connect_async(lte_event_handler);
 	if (err) {
-		printk("Failed to start LTE connection: %d\n", err);
-		printk("Will continue with GNSS-only mode\n");
-		
-		switch_to_gnss_only_mode();
-		start_lte_periodic_checks();
-		
+		printk("❌ Failed to start LTE: %d\n", err);
+		printk("   GPS will work in standalone mode\n");
 	} else {
-		printk("lte_lc_connect_async() started successfully (non-blocking)\n");
-		printk("Step 4: Monitoring LTE connection (max %d seconds)...\n", LTE_INITIAL_TIMEOUT_SEC);
-		printk("(Active monitoring with modem status queries to prevent watchdog)\n\n");
-
-		/* Active modem monitoring loop - prevents 60-second watchdog timeout */
-		int wait_time = 0;
-		int query_interval = 10; /* Query every 10 seconds */
-		char response[256];
-
-		while (wait_time < LTE_INITIAL_TIMEOUT_SEC) {
-			/* Try to take semaphore with short timeout */
-			err = k_sem_take(&lte_connected, K_SECONDS(query_interval));
-			if (err == 0) {
-				/* Got the semaphore - LTE connected! */
-				printk("\n✅ LTE connection established after %d seconds!\n", wait_time);
-				printk("A-GNSS will be available for faster GPS fixes\n");
-				current_state = STATE_NORMAL;
-				break;
-			}
-			
-			wait_time += query_interval;
-			
-			/* Query modem status to keep it active AND provide visibility */
-			printk("📊 LTE Status at %d seconds:\n", wait_time);
-			
-			/* Check registration status */
-			err = nrf_modem_at_cmd(response, sizeof(response), "AT+CEREG?");
-			if (err == 0) {
-				printk("   CEREG: %s", response);
-			} else {
-				printk("   CEREG query failed: %d\n", err);
-			}
-			
-			/* Check signal quality */
-			err = nrf_modem_at_cmd(response, sizeof(response), "AT+CSQ");
-			if (err == 0) {
-				printk("   Signal: %s", response);
-			} else {
-				printk("   CSQ query failed: %d\n", err);
-			}
-			
-			/* Check operator */
-			err = nrf_modem_at_cmd(response, sizeof(response), "AT+COPS?");
-			if (err == 0) {
-				printk("   Operator: %s", response);
-			} else {
-				printk("   COPS query failed: %d\n", err);
-			}
-			
-			printk("\n");
-		}
-
-		if (wait_time >= LTE_INITIAL_TIMEOUT_SEC) {
-			printk("⏱️  LTE initial connection timeout (%d seconds)\n", LTE_INITIAL_TIMEOUT_SEC);
-			printk("This is EXPECTED if SIM has weak signal\n");
-			
-			lte_lc_offline();
-			
-			switch_to_gnss_only_mode();
-			start_lte_periodic_checks();
-			
-			printk("GPS will work in standalone mode (no A-GNSS)\n");
-			printk("Will check for LTE signal every 5 minutes\n");
-		}
+		printk("✅ LTE connecting in background\n\n");
 	}
 
-	/* ========================================================================
-	 * END OF MODIFIED SECTION
-	 * ======================================================================== */
+	printk("⏳ Waiting 15 seconds for modem stabilization...\n");
+	printk("   (LTE connecting in background)\n");
+	k_sleep(K_SECONDS(15));
 
-	printk("\nStep 5: Checking time sync requirements...\n");
+	printk("\nStep 5: Time sync will happen automatically when LTE connects\n");
 	if (IS_ENABLED(CONFIG_DATE_TIME)) {
-		if (current_state == STATE_NORMAL) {
-			printk("Step 5: Syncing date/time via LTE...\n");
-			date_time_update_async(date_time_evt_handler);
-			err = k_sem_take(&time_update_finished, K_SECONDS(10));
-			if (err) {
-				printk("Time sync timeout (not critical)\n");
-			} else {
-				printk("Time synchronized\n");
-			}
-		} else {
-			printk("Step 5: Skipping time sync (LTE not connected)\n");
-		}
-	} else {
-		printk("Step 5: DATE_TIME not enabled, skipping time sync\n");
-	}
-
-	/* Only reconfigure if we're still in normal mode */
-	if (current_state == STATE_NORMAL) {
-		printk("\nStep 5.5: Re-configuring modem for GNSS after LTE attempt...\n");
-		err = nrf_modem_at_printf("AT%%XSYSTEMMODE=1,0,1,0");
-		if (err) {
-			printk("ERROR: Failed to re-apply system mode: %d\n", err);
-		} else {
-			printk("System mode re-applied: LTE-M + GNSS\n");
-		}
-		
-		err = nrf_modem_at_printf("AT+CFUN=1");
-		if (err) {
-			printk("ERROR: Failed to re-apply CFUN: %d\n", err);
-		} else {
-			printk("Modem functional mode re-applied\n");
-		}
-		
-		printk("Waiting 5 seconds for modem to stabilize again...\n");
-		k_sleep(K_SECONDS(5));
-		printk("Modem re-stabilization complete\n");
+		printk("✅ Date/time handler already registered (will sync via LTE when available)\n");
 	}
 
 	/* Initialize Location library */
