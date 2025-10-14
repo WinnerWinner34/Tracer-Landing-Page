@@ -1,8 +1,8 @@
 /*
  * Fleet Tracker Phase 2C+ - Smart LTE Management with Active Modem Monitoring
  * 
- * MODIFICATION: Replaced blocking semaphore wait with active modem status polling
- * to prevent 60-second modem watchdog timeout when SIM is activated.
+ * MODIFICATION: Start in LTE+GNSS mode from beginning instead of switching modes.
+ * This avoids error 65536 when trying to change XSYSTEMMODE after modem is active.
  */
 
 #include <zephyr/kernel.h>
@@ -31,24 +31,48 @@ void nrf_modem_fault_handler(struct nrf_modem_fault_info *fault_info)
 	printk("============================================\n\n");
 
 	/* Halt instead of reset so we can see the fault in RTT */
-	printk("System halted. Reset device to try again.\n");
-	while(1) {
-		k_sleep(K_SECONDS(1));
+	printk("System halted. Press RESET to restart.\n");
+	while (1) {
+		k_sleep(K_FOREVER);
 	}
 }
 
-/* Configuration */
-#define GPS_BUFFER_SIZE 100
-#define GPS_TIMEOUT_MS 90000
-#define GPS_ACCURACY_THRESHOLD 50.0
-/* LTE connection timeout - 7 minutes for first-time US Cellular SIM activation
- * First connection can take 2-5 minutes for roaming authentication and PDN setup */
-#define LTE_INITIAL_TIMEOUT_SEC 420  // Changed from 120 to allow full RRC/PDN connection
-#define LTE_CHECK_INTERVAL_SEC 300
-#define LTE_CHECK_TIMEOUT_SEC 120
-#define LTE_DISCONNECT_GRACE_PERIOD_SEC 300
+/* ============================================================================
+ * GPS STATISTICS AND STATE TRACKING
+ * ============================================================================ */
+static struct {
+	uint32_t total_updates;
+	uint32_t valid_fixes;
+	uint32_t timeout_count;
+	uint32_t error_count;
+	uint32_t agnss_requests;
+	uint32_t consecutive_failures;
+	bool continuous_mode_active;
+	bool first_fix_acquired;
+	int64_t first_fix_time;
+	int64_t last_fix_time;
+	uint32_t best_accuracy_cm;
+} gps_stats = {0};
 
-/* System state */
+/* GPS configuration */
+#define GPS_TIMEOUT_MS 90000
+#define GPS_BUFFER_SIZE 100
+#define GPS_ACCURACY_THRESHOLD 50.0
+
+static uint32_t current_gps_timeout = GPS_TIMEOUT_MS;
+
+/* GPS circular buffer */
+static struct {
+	struct location_event_data buffer[GPS_BUFFER_SIZE];
+	uint8_t write_index;
+	uint8_t read_index;
+	uint8_t count;
+	struct k_mutex lock;
+} gps_buffer;
+
+/* ============================================================================
+ * LTE STATE MACHINE
+ * ============================================================================ */
 typedef enum {
 	STATE_NORMAL,
 	STATE_NO_LTE,
@@ -56,46 +80,24 @@ typedef enum {
 } system_state_t;
 
 static system_state_t current_state = STATE_NO_LTE;
-static uint32_t current_gps_timeout = GPS_TIMEOUT_MS;
 
-/* Work items */
+/* LTE check configuration */
+#define LTE_CHECK_INTERVAL_SEC (5 * 60)
+#define LTE_CHECK_TIMEOUT_SEC 30
+#define LTE_DISCONNECT_GRACE_PERIOD_SEC 30
+
+/* Work items for LTE management */
 static struct k_work_delayable lte_check_work;
 static struct k_work_delayable lte_disconnect_work;
 
-/* GPS circular buffer */
-static struct {
-	struct location_event_data buffer[GPS_BUFFER_SIZE];
-	uint32_t write_index;
-	uint32_t read_index;
-	uint32_t count;
-	struct k_mutex lock;
-} gps_buffer;
-
-/* GPS statistics */
-static struct {
-	uint32_t total_updates;
-	uint32_t valid_fixes;
-	uint32_t accuracy_failures;
-	uint32_t timeout_count;
-	uint32_t error_count;
-	int64_t last_fix_time;
-	int64_t first_fix_time;
-	bool continuous_mode_active;
-	uint32_t consecutive_failures;
-	uint32_t best_accuracy_cm;
-	uint32_t total_fix_time_ms;
-	uint32_t agnss_requests;
-	bool first_fix_acquired;
-} gps_stats = {0};
-
-/* ============================================================================
- * SYNCHRONIZATION
- * ============================================================================ */
+/* Semaphores */
+static K_SEM_DEFINE(location_initialized, 0, 1);
 static K_SEM_DEFINE(lte_connected, 0, 1);
 static K_SEM_DEFINE(time_update_finished, 0, 1);
-static K_SEM_DEFINE(location_initialized, 0, 1);
 
-/* Forward declarations */
+/* ============================================================================
+ * FUNCTION PROTOTYPES
+ * ============================================================================ */
 static void location_event_handler(const struct location_event_data *event_data);
 static void lte_event_handler(const struct lte_lc_evt *const evt);
 static void date_time_evt_handler(const struct date_time_evt *evt);
@@ -277,71 +279,78 @@ static void lte_event_handler(const struct lte_lc_evt *const evt)
 				memset(response, 0, sizeof(response));
 				err = nrf_modem_at_cmd(response, sizeof(response), "AT+CGACT?");
 				if (err == 0) {
-					printk("   PDN Status: %s", response);
-				} else {
-					printk("   PDN Status query failed: %d\n", err);
+					printk("   PDN Status: %s\n", response);
 				}
 
-				/* Check IP address assignment */
+				/* Check assigned IP address */
 				memset(response, 0, sizeof(response));
-				err = nrf_modem_at_cmd(response, sizeof(response), "AT+CGPADDR");
+				err = nrf_modem_at_cmd(response, sizeof(response), "AT+CGPADDR=0");
 				if (err == 0) {
-					printk("   IP Address: %s", response);
-				} else {
-					printk("   IP query failed: %d\n", err);
+					printk("   IP Address: %s\n", response);
 				}
+
 				printk("📊 END PDN DIAGNOSTICS\n\n");
 			}
 
-			k_sem_give(&lte_connected);
-
-			/* Cancel disconnect grace period if running */
+			/* Cancel disconnect grace period if one was scheduled */
 			k_work_cancel_delayable(&lte_disconnect_work);
 
-			/* Upgrade from NO_LTE to NORMAL mode */
-			if (current_state != STATE_NORMAL) {
+			/* Update state and signal */
+			if (current_state == STATE_NO_LTE || current_state == STATE_CHECKING_LTE) {
 				printk("📡 LTE: Switching to NORMAL mode - A-GNSS now available\n");
 				printk("📡 LTE: Location library will auto-download A-GNSS data\n");
 				current_state = STATE_NORMAL;
 			}
+
+			k_sem_give(&lte_connected);
 			break;
-			
+
 		case LTE_LC_NW_REG_NOT_REGISTERED:
 			printk("📡 LTE: Not registered\n");
-			
-			/* Start grace period before switching modes */
-			if (current_state == STATE_NORMAL) {
-				printk("📡 LTE: Starting 30-second grace period before switching to GNSS-only\n");
-				k_work_schedule(&lte_disconnect_work, K_SECONDS(LTE_DISCONNECT_GRACE_PERIOD_SEC));
-			}
 			break;
-			
+
 		case LTE_LC_NW_REG_SEARCHING:
 			printk("📡 LTE: Searching for network\n");
 			break;
-			
+
 		case LTE_LC_NW_REG_REGISTRATION_DENIED:
 			printk("📡 LTE: Registration denied\n");
 			break;
-			
+
+		case LTE_LC_NW_REG_UICC_FAIL:
+			printk("📡 LTE: UICC failure\n");
+			break;
+
 		default:
-			printk("📡 LTE: Status %d\n", evt->nw_reg_status);
+			printk("📡 LTE: Registration status %d\n", evt->nw_reg_status);
 			break;
 		}
 		break;
-		
+
 	case LTE_LC_EVT_PSM_UPDATE:
 		printk("📡 LTE: PSM parameter update\n");
 		break;
-		
+
+	case LTE_LC_EVT_EDRX_UPDATE:
+		printk("📡 LTE: eDRX update\n");
+		break;
+
 	case LTE_LC_EVT_RRC_UPDATE:
 		if (evt->rrc_mode == LTE_LC_RRC_MODE_CONNECTED) {
 			printk("📡 LTE: RRC Connected\n");
-		} else {
+		} else if (evt->rrc_mode == LTE_LC_RRC_MODE_IDLE) {
 			printk("📡 LTE: RRC Idle\n");
 		}
 		break;
-		
+
+	case LTE_LC_EVT_CELL_UPDATE:
+		/* Cellular location changed - not critical for our app */
+		break;
+
+	case LTE_LC_EVT_LTE_MODE_UPDATE:
+		/* LTE mode changed - not critical */
+		break;
+
 	default:
 		break;
 	}
@@ -355,7 +364,7 @@ static void lte_disconnect_work_handler(struct k_work *work)
 	enum lte_lc_nw_reg_status status;
 	int err;
 	
-	printk("\n⏱️  30-second grace period expired, checking LTE status...\n");
+	printk("\n⏱️ 30-second grace period expired, checking LTE status...\n");
 	
 	err = lte_lc_nw_reg_status_get(&status);
 	if (err) {
@@ -452,52 +461,40 @@ static void location_event_handler(const struct location_event_data *event_data)
 		/* Track best accuracy */
 		uint32_t accuracy_cm = (uint32_t)(event_data->location.accuracy * 100);
 		if (gps_stats.best_accuracy_cm == 0 || accuracy_cm < gps_stats.best_accuracy_cm) {
+			if (gps_stats.best_accuracy_cm > 0) {
+				printk("🎯 New best accuracy: %.1fm (was %.1fm)\n",
+				       accuracy_cm / 100.0, gps_stats.best_accuracy_cm / 100.0);
+			}
 			gps_stats.best_accuracy_cm = accuracy_cm;
 		}
 		
-		/* Smart output reduction */
-		bool should_print = (gps_stats.valid_fixes <= 5) || 
-		                   (gps_stats.valid_fixes % 10 == 0);
+		/* Store in buffer if accuracy is good enough */
+		if (event_data->location.accuracy <= GPS_ACCURACY_THRESHOLD) {
+			gps_buffer_add(event_data);
+			
+			/* Submit to transmission manager */
+			transmission_manager_add_location(event_data);
+		}
 		
-		if (should_print) {
-			printk("📍 Fix #%u: %.6f, %.6f (±%.1fm)\n",
+		/* Reduce logging frequency after first fix */
+		if (gps_stats.valid_fixes <= 5 || gps_stats.valid_fixes % 10 == 0) {
+			printk("🛰️ GPS#%u: %.6f,%.6f ±%.1fm\n",
 			       gps_stats.valid_fixes,
 			       event_data->location.latitude,
 			       event_data->location.longitude,
 			       (double)event_data->location.accuracy);
 		}
 		
-		/* Periodic summary */
-		if (gps_stats.valid_fixes % 50 == 0) {
-			uint32_t success_rate = (gps_stats.valid_fixes * 100) / gps_stats.total_updates;
-			printk("\n📊 Summary at %u fixes:\n", gps_stats.valid_fixes);
-			printk("   Success rate: %u%%\n", success_rate);
-			printk("   Best accuracy: %.1fm\n", gps_stats.best_accuracy_cm / 100.0);
-			printk("   Timeouts: %u | Errors: %u\n\n", 
-			       gps_stats.timeout_count, gps_stats.error_count);
-		}
-		
-		/* Check accuracy threshold */
-		if (event_data->location.accuracy <= GPS_ACCURACY_THRESHOLD) {
-			gps_buffer_add(event_data);
-
-			/* Add to transmission batch */
-			transmission_manager_add_location(event_data);
-		} else {
-			gps_stats.accuracy_failures++;
-			
-			if (gps_stats.accuracy_failures <= 3 || gps_stats.accuracy_failures % 10 == 0) {
-				printk("⚠️  Fix #%u accuracy %.1fm exceeds threshold %.1fm (failure: %u)\n",
-				       gps_stats.valid_fixes,
-				       (double)event_data->location.accuracy,
-				       GPS_ACCURACY_THRESHOLD,
-				       gps_stats.accuracy_failures);
-			}
-			
-			if (gps_stats.consecutive_failures == 10) {
-				printk("⚠️  WARNING: 10 consecutive accuracy failures\n");
-				printk("   Consider: moving to better location or increasing threshold\n");
-			}
+		/* Adaptive timeout adjustment */
+		if (gps_stats.consecutive_failures >= 5 && 
+		    current_gps_timeout < GPS_TIMEOUT_MS * 2) {
+			current_gps_timeout = GPS_TIMEOUT_MS * 2;
+			printk("   Increasing timeout to %u seconds for difficult conditions\n", 
+			       current_gps_timeout / 1000);
+		} else if (gps_stats.consecutive_failures == 0 && 
+		           current_gps_timeout > GPS_TIMEOUT_MS) {
+			current_gps_timeout = GPS_TIMEOUT_MS;
+			printk("   Decreasing threshold\n");
 		}
 		break;
 
@@ -506,7 +503,7 @@ static void location_event_handler(const struct location_event_data *event_data)
 		gps_stats.consecutive_failures++;
 		
 		if (gps_stats.timeout_count <= 5 || gps_stats.timeout_count % 10 == 0) {
-			printk("⏱️  GPS timeout (count: %u, consecutive: %u)\n", 
+			printk("⏱️ GPS timeout (count: %u, consecutive: %u)\n", 
 			       gps_stats.timeout_count, gps_stats.consecutive_failures);
 			
 			if (gps_stats.timeout_count == 3 && !gps_stats.first_fix_acquired) {
@@ -602,7 +599,7 @@ void gps_thread(void)
 			
 			current_gps_timeout = GPS_TIMEOUT_MS * 2;
 			
-			printk("\n⚠️  ADAPTIVE TIMEOUT ADJUSTMENT\n");
+			printk("\n⚠️ ADAPTIVE TIMEOUT ADJUSTMENT\n");
 			printk("   Consecutive failures: %u\n", gps_stats.consecutive_failures);
 			printk("   New GNSS timeout: %u seconds (was %u)\n", 
 			       current_gps_timeout / 1000, GPS_TIMEOUT_MS / 1000);
@@ -634,7 +631,7 @@ void heartbeat_thread(void)
 		int64_t last_tx = 0;
 		transmission_manager_get_stats(&batch_count, &last_tx);
 
-		printk("\n⏱️  Runtime: %u sec | GPS: %u/%u (%u%%) | Buf: %u/%u | Batch: %u/20",
+		printk("\n⏱️ Runtime: %u sec | GPS: %u/%u (%u%%) | Buf: %u/%u | Batch: %u/20",
 		       seconds_counter,
 		       gps_stats.valid_fixes,
 		       gps_stats.total_updates,
@@ -677,62 +674,63 @@ int main(void)
 	printk("  • Dynamic timeout adjustment\n");
 	printk("  • Enhanced statistics tracking\n\n");
 
-	/* Initialize GPS circular buffer */
 	gps_buffer_init();
-	
-	/* Initialize work queues for LTE management */
-	k_work_init_delayable(&lte_check_work, lte_check_work_handler);
-	k_work_init_delayable(&lte_disconnect_work, lte_disconnect_work_handler);
 
-	/* Initialize modem */
 	printk("Initializing modem library...\n");
 	err = nrf_modem_lib_init();
 	if (err) {
-		printk("Modem init failed: %d\n", err);
+		printk("ERROR: Modem initialization failed: %d\n", err);
 		return err;
 	}
-	printk("Modem library initialized\n");
+	printk("Modem library initialized\n\n");
 
-	/* Check band configuration for US Cellular compatibility */
-	printk("\n========================================\n");
-	printk("📡 CHECKING BAND CONFIGURATION\n");
+	/* Initialize work items */
+	k_work_init_delayable(&lte_check_work, lte_check_work_handler);
+	k_work_init_delayable(&lte_disconnect_work, lte_disconnect_work_handler);
+
+	/* ================================================================== */
+	/* BAND LOCK CHECK */
+	/* ================================================================== */
+	printk("========================================\n");
+	printk("🔍 CHECKING BAND CONFIGURATION\n");
 	printk("========================================\n");
 
-	char band_response[256];
-	err = nrf_modem_at_cmd(band_response, sizeof(band_response), "AT%%XBANDLOCK=2");
-	if (err == 0) {
-		printk("📶 Current band lock status:\n%s\n", band_response);
+	char band_response[100];
+	int ret = nrf_modem_at_cmd(band_response, sizeof(band_response), "AT%%XBANDLOCK?");
+	if (ret) {
+		printk("⚠️ Failed to query band lock: %d\n", ret);
 	} else {
-		printk("⚠️  Failed to query band lock: %d\n", err);
+		printk("Band lock: %s\n", band_response);
 	}
 
-	/* Query supported bands */
-	err = nrf_modem_at_cmd(band_response, sizeof(band_response), "AT%%XBANDLOCK=1");
-	if (err == 0) {
-		printk("📶 Supported bands:\n%s\n", band_response);
+	memset(band_response, 0, sizeof(band_response));
+	ret = nrf_modem_at_cmd(band_response, sizeof(band_response), "AT%%XBANDLOCK=2");
+	if (ret) {
+		printk("⚠️ Failed to query supported bands: %d\n", ret);
 	} else {
-		printk("⚠️  Failed to query supported bands: %d\n", err);
+		printk("Supported bands: %s\n", band_response);
 	}
-
 	printk("========================================\n\n");
 
-	/* Display device IMEI for SIM activation */
+	/* ================================================================== */
+	/* DEVICE IDENTIFICATION */
+	/* ================================================================== */
 	{
-		char imei_buf[16] = {0};
-		int ret;
-
 		printk("\n========================================\n");
 		printk("📱 DEVICE IDENTIFICATION\n");
 		printk("========================================\n");
-
-		ret = modem_info_init();
-		if (ret) {
-			printk("⚠️  modem_info_init failed: %d\n", ret);
-		}
-
-		ret = modem_info_string_get(MODEM_INFO_IMEI, imei_buf, sizeof(imei_buf));
-		if (ret > 0) {
-			printk("✅ IMEI: %s\n", imei_buf);
+		
+		char imei[16];
+		ret = nrf_modem_at_cmd(imei, sizeof(imei), "AT+CGSN");
+		if (ret == 0) {
+			/* Remove any newlines/carriage returns */
+			for (int i = 0; i < sizeof(imei); i++) {
+				if (imei[i] == '\r' || imei[i] == '\n') {
+					imei[i] = '\0';
+					break;
+				}
+			}
+			printk("✅ IMEI: %s\n", imei);
 			printk("   (Write this down for SIM activation!)\n");
 		} else {
 			printk("❌ Failed to get IMEI: %d\n", ret);
@@ -741,14 +739,33 @@ int main(void)
 		printk("========================================\n\n");
 	}
 
-	/* Configure modem system mode - LTE ONLY initially to reduce power surge */
-	printk("Configuring modem system mode for LTE-M only (GNSS added later)...\n");
-	err = nrf_modem_at_printf("AT%%XSYSTEMMODE=1,0,0,0");
+	/* ===================================================================
+	 * CRITICAL CHANGE: Start in LTE+GNSS mode from the beginning
+	 * 
+	 * WHY: Avoids error 65536 that occurs when trying to change system
+	 * mode (AT%XSYSTEMMODE) after the modem is already active. The modem
+	 * won't let you change modes once CFUN=1 has been called.
+	 * 
+	 * PREVIOUS APPROACH (broken):
+	 *   1. Start in LTE-only (1,0,0,0)
+	 *   2. Connect LTE
+	 *   3. Try to switch to LTE+GNSS (1,0,1,0) ← ERROR 65536!
+	 * 
+	 * NEW APPROACH (works):
+	 *   1. Start in LTE+GNSS (1,0,1,0) from beginning
+	 *   2. No mode switching needed
+	 *   3. Everything works!
+	 * 
+	 * This matches mainV1-Working_RTT_LTE_GNSS.c which successfully
+	 * starts in LTE+GNSS mode.
+	 * =================================================================== */
+	printk("Configuring modem system mode for LTE-M + GNSS from start...\n");
+	err = nrf_modem_at_printf("AT%%XSYSTEMMODE=1,0,1,0");
 	if (err) {
 		printk("ERROR: Failed to set system mode: %d\n", err);
 	} else {
-		printk("System mode set: LTE-M only\n");
-		printk("   (GNSS will be enabled after LTE connection to prevent power surge)\n");
+		printk("System mode set: LTE-M + GNSS\n");
+		printk("   (Both radios enabled from the start - no switching needed)\n");
 	}
 
 	/* TEMPORARILY DISABLED - These AT commands fail with error 65536 and may cause modem fault
@@ -762,14 +779,14 @@ int main(void)
 
 	err = nrf_modem_at_printf("AT%%XCOEX0=0");
 	if (err) {
-		printk("⚠️  COEX disable failed: %d (continuing anyway)\n", err);
+		printk("⚠️ COEX disable failed: %d (continuing anyway)\n", err);
 	} else {
 		printk("✅ Coexistence disabled - LTE gets 100%% RF time\n");
 	}
 
 	err = nrf_modem_at_printf("AT%%XMAGPIO=1,0,0,1,1,1574,1577");
 	if (err) {
-		printk("⚠️  MAGPIO config failed: %d\n", err);
+		printk("⚠️ MAGPIO config failed: %d\n", err);
 		printk("   WARNING: Modem may use onboard antenna (won't work!)\n");
 	} else {
 		printk("✅ MAGPIO configured for external antenna\n");
@@ -814,6 +831,16 @@ int main(void)
 	if (IS_ENABLED(CONFIG_DATE_TIME)) {
 		printk("✅ Date/time handler already registered (will sync via LTE when available)\n");
 	}
+
+	/* ===================================================================
+	 * NOTE: Step 5.5 "Enabling GNSS" section has been REMOVED
+	 * 
+	 * WHY: We already enabled GNSS at the start (line ~211) with 
+	 * AT%XSYSTEMMODE=1,0,1,0. The old Step 5.5 tried to switch from
+	 * LTE-only to LTE+GNSS which caused error 65536.
+	 * 
+	 * Since we start in LTE+GNSS mode, no switching is needed!
+	 * =================================================================== */
 
 	/* Initialize Location library */
 	printk("\nStep 6: About to initialize Location library...\n");
