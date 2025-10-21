@@ -93,6 +93,18 @@ static void transmit_batch_to_cloud(void)
     printk("📦 Encoded %d locations into %zu bytes\n",
            batch_buffer.count, msg_len);
 
+    /* Ensure MQTT connected */
+    if (!mqtt_manager_is_connected()) {
+        printk("🔌 MQTT not connected - connecting now...\n");
+        err = mqtt_manager_connect();
+        if (err) {
+            printk("❌ MQTT connection failed: %d - will retry next batch\n", err);
+            return;  /* Don't clear batch - will retry */
+        }
+        /* Wait for connection to fully establish */
+        k_sleep(K_SECONDS(3));
+    }
+
     /* AWS echo test topic: aa/<IMEI>/test */
     char topic[128];
     snprintf(topic, sizeof(topic), "aa/%s/test", device_imei);
@@ -161,7 +173,7 @@ int transmission_manager_init(void)
         printk("❌ MQTT manager init failed: %d\n", err);
         return err;
     }
-    printk("✅ MQTT manager initialized\n");
+    printk("✅ MQTT manager initialized (will connect on first transmission)\n");
 
     return 0;
 }
