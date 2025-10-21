@@ -1,6 +1,6 @@
 /*
  * Fleet Tracker Phase 2C+ - Smart LTE Management with Active Modem Monitoring
- * 
+ *
  * MODIFICATION: Start in LTE+GNSS mode from beginning instead of switching modes.
  * This avoids error 65536 when trying to change XSYSTEMMODE after modem is active.
  */
@@ -15,6 +15,8 @@
 #include <zephyr/logging/log.h>
 
 #include "transmission_manager.h"
+#include "device_identity.h"
+#include "cert_provisioning.h"
 
 /* ============================================================================
  * MODEM FAULT HANDLER - Catches modem faults before system reset
@@ -683,6 +685,34 @@ int main(void)
 		return err;
 	}
 	printk("Modem library initialized\n\n");
+
+	/* Initialize device identity */
+	printk("\nStep: Initializing device identity...\n");
+	err = device_identity_init();
+	if (err) {
+		printk("❌ Device identity init failed: %d\n", err);
+		return 0;
+	}
+	printk("✅ Device identity initialized\n");
+	printk("   Device ID: %s\n", device_identity_get_id());
+	printk("   IMEI: %s\n\n", device_identity_get_imei());
+
+	/* CRITICAL: Provision certificates BEFORE LTE connection starts */
+	printk("\n📜 Checking AWS certificates...\n");
+	if (cert_provisioning_check()) {
+		printk("✅ Certificates already present in modem storage\n");
+		printk("   Skipping provisioning to preserve flash wear\n\n");
+	} else {
+		printk("⚠️  Certificates missing - provisioning now...\n");
+		err = cert_provisioning_init();
+		if (err) {
+			printk("❌ ERROR: Certificate provisioning failed: %d\n", err);
+			printk("   Check that convert_certs.py was run successfully\n");
+			printk("   AWS connection will fail without certificates\n");
+		} else {
+			printk("✅ Certificates provisioned successfully\n\n");
+		}
+	}
 
 	/* Initialize work items */
 	k_work_init_delayable(&lte_check_work, lte_check_work_handler);

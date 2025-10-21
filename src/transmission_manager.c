@@ -7,6 +7,9 @@
 #include <modem/lte_lc.h>
 #include <modem/location.h>
 #include <zephyr/logging/log.h>
+#include "mqtt_manager.h"
+#include "device_identity.h"
+#include "aws_protocol.h"
 
 LOG_MODULE_REGISTER(transmission_mgr, LOG_LEVEL_INF);
 
@@ -66,10 +69,44 @@ static void transmit_batch_to_cloud(void)
     }
     
     printk("========================================\n\n");
-    
-    /* TODO: In Phase 3B, we'll add actual cloud transmission here */
-    
-    /* Clear batch after "transmission" */
+
+    /* Get device IMEI for topic */
+    const char *device_imei = device_identity_get_imei();
+    if (!device_imei) {
+        printk("❌ Failed to get IMEI\n");
+        return;
+    }
+
+    /* Encode GPS batch to binary format */
+    uint8_t binary_msg[512];
+    size_t msg_len = 0;
+
+    int err = aws_encode_gps_batch(batch_buffer.locations,
+                                   batch_buffer.count,
+                                   binary_msg,
+                                   &msg_len);
+    if (err) {
+        printk("❌ GPS encoding failed: %d\n", err);
+        return;
+    }
+
+    printk("📦 Encoded %d locations into %zu bytes\n",
+           batch_buffer.count, msg_len);
+
+    /* AWS echo test topic: aa/<IMEI>/test */
+    char topic[128];
+    snprintf(topic, sizeof(topic), "aa/%s/test", device_imei);
+
+    /* Publish binary message */
+    err = mqtt_manager_publish(topic, binary_msg, msg_len);
+    if (err) {
+        printk("❌ Publish failed: %d\n", err);
+        return;
+    }
+
+    printk("✅ Published to %s (%zu bytes)\n", topic, msg_len);
+
+    /* Clear batch after transmission */
     batch_buffer.count = 0;
     batch_buffer.last_transmission_time = k_uptime_get();
 }
@@ -109,9 +146,23 @@ int transmission_manager_init(void)
     
     /* Schedule first transmission */
     k_work_schedule(&scheduled_transmission_work, K_SECONDS(TRANSMISSION_INTERVAL_SEC));
-    
+
     printk("✅ Transmission manager initialized\n\n");
-    
+
+    /* Initialize MQTT manager */
+    const char *device_imei = device_identity_get_imei();
+    if (!device_imei) {
+        printk("❌ Failed to get IMEI for MQTT init\n");
+        return -EINVAL;
+    }
+
+    int err = mqtt_manager_init(device_imei);
+    if (err) {
+        printk("❌ MQTT manager init failed: %d\n", err);
+        return err;
+    }
+    printk("✅ MQTT manager initialized\n");
+
     return 0;
 }
 
